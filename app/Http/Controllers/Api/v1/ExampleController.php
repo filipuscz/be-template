@@ -20,22 +20,18 @@ class ExampleController extends BaseApiController
      */
     public function index(Request $request)
     {
-        try {
-            $indexes = $this->prepareIndexes($request);
-            $results = $this->exampleService->findByIndexes(
-                $indexes['indexes'],
-                $indexes['any'],
-                $indexes['limit'],
-                $indexes['orderBy'],
-                $indexes['qcomparator'],
-                $indexes['fields'],
-            );
-            $formattedResponse = $this->paginateResponse($results, BaseResource::class);
-            return $this->setStatusMsg($formattedResponse['meta']['total'] ? 'success' : 'failed')
-                ->respondOK($formattedResponse, $formattedResponse['meta']['total'] ? 'Data Found' : 'Data Not Found');
-        } catch (\Throwable $e) {
-            return $this->respondInternalError(null, $e->getMessage());
-        }
+        $indexes = $this->prepareIndexes($request);
+        $results = $this->exampleService->findByIndexes(
+            $indexes['indexes'],
+            $indexes['any'],
+            $indexes['limit'],
+            $indexes['orderBy'],
+            $indexes['qcomparator'],
+            $indexes['fields'],
+        );
+        $formattedResponse = $this->paginateResponse($results, BaseResource::class);
+        return $this->setStatusMsg($formattedResponse['meta']['total'] ? 'success' : 'failed')
+            ->respondOK($formattedResponse, $formattedResponse['meta']['total'] ? 'Data Found' : 'Data Not Found');
     }
 
     /**
@@ -51,16 +47,10 @@ class ExampleController extends BaseApiController
      */
     public function store(StoreExampleRequest $request)
     {
-        try {
-            $data = $this->exampleService->create($request->all());
-            $response = $this->respondOK(array(
-                'data' => new BaseResource($data),
-            ));
-        } catch (\Throwable $th) {
-            $response = $this->respondInternalError(null, $th->getMessage());
-        } finally {
-            return $response;
-        }
+        $data = $this->exampleService->create($request->all());
+        return $this->respondOK(array(
+            'data' => new BaseResource($data),
+        ));
     }
 
     /**
@@ -68,18 +58,12 @@ class ExampleController extends BaseApiController
      */
     public function show(string $idOrSlug)
     {
-        try {
-            $data = $this->exampleService->findById($idOrSlug);
-            throw_if((empty($data)), new NotFoundHttpException(404));
+        $data = $this->exampleService->findById($idOrSlug);
+        throw_if((empty($data)), new NotFoundHttpException(404));
 
-            $response = $this->setStatusMsg("success")->respondOK(array(
-                'data' => new BaseResource($data)
-            ));
-        } catch (\Throwable $th) {
-            $response = $this->setStatusMsg("failed")->respondInternalError(null, $th->getMessage());
-        } finally {
-            return $response;
-        }
+        return $this->setStatusMsg("success")->respondOK(array(
+            'data' => new BaseResource($data)
+        ));
     }
 
     /**
@@ -94,16 +78,28 @@ class ExampleController extends BaseApiController
      */
     public function update(Request $request, string $idOrSlug)
     {
-        try {
-            $data = $this->exampleService->update($request->all(), $idOrSlug);
-            $response = $this->respondOK(array(
-                'data' => new BaseResource($data),
-            ));
-        } catch (\Throwable $th) {
-            $response = $this->respondInternalError(null, $th->getMessage());
-        } finally {
-            return $response;
+        $data = $this->exampleService->update($request->all(), $idOrSlug);
+        return $this->respondOK(array(
+            'data' => new BaseResource($data),
+        ));
+    }
+
+    /**
+     * Update multiple resources in storage.
+     */
+    public function bulkUpdate(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        // except ids
+        $updateData = $request->except('ids');
+        if (empty($ids) || !is_array($ids)) {
+            throw new NotFoundHttpException("No IDs provided for update");
         }
+        if (empty($updateData) || !is_array($updateData)) {
+            throw new NotFoundHttpException("No data provided for update");
+        }
+        $count = $this->exampleService->updateMany($ids, $updateData);
+        return $this->respondOK(null, "$count resources have been updated", true);
     }
 
     /**
@@ -111,16 +107,23 @@ class ExampleController extends BaseApiController
      */
     public function destroy(string $idOrSlug)
     {
-        try {
-            $data = $this->exampleService->findById($idOrSlug);
-            throw_if(!$data, new NotFoundHttpException("Data Not Found"));
+        $data = $this->exampleService->findById($idOrSlug);
+        throw_if(!$data, new NotFoundHttpException("Data Not Found"));
 
-            $data->delete();
-            $response = $this->respondOK(null, "The resource has been deleted", true);
-        } catch (\Throwable $th) {
-            $response = $this->respondInternalError(null, $th->getMessage());
-        } finally {
-            return $response;
+        $this->exampleService->delete($idOrSlug);
+        return $this->respondOK(null, "The resource has been deleted", true);
+    }
+
+    /** 
+     * Remove multiple resources from storage.
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids) || !is_array($ids)) {
+            throw new NotFoundHttpException("No IDs provided for deletion");
         }
+        $count = $this->exampleService->deleteMany($ids);
+        return $this->respondOK(null, "$count resources have been deleted", true);
     }
 }

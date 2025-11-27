@@ -20,8 +20,8 @@ Route::prefix('v1')
                 Route::get('/show/{idOrSlug}', 'show')->name('show');
                 Route::put('/update/{idOrSlug}', 'update')->name('update');
                 Route::delete('/delete/{idOrSlug}', 'destroy')->name('delete');
-                Route::post('/bulk_action/update', 'bulkUpdate')->name('bulk_update');
-                Route::match(['delete', 'post'], '/bulk_action/destroy', 'bulkDestroy')->name('bulk_destroy');
+                Route::put('/bulk_action/update', 'bulkUpdate')->name('bulk_action.update');
+                Route::match(['delete', 'post'], '/bulk_action/destroy', 'bulkDestroy')->name('bulk_action.destroy');
             });
         Route::name('auth.')
             ->prefix('auth')

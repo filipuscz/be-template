@@ -411,40 +411,39 @@ class BaseService implements IBaseService
 	/**
 	 * Update multiple model instances.
 	 *
+	 * @param array $ids An array of IDs or slugs of the models to update.
 	 * @param array $updateData An array of data to update, where the key is the ID or slug, and the value is the data to update.
 	 * @return array Updated model instances.
 	 * @throws \Exception If any update fails.
 	 */
-	public function updateMany(array $updateData): array
+	public function updateMany(array $ids, array $updateData): ?int
 	{
 		DB::beginTransaction();
 
 		try {
 			$modelName = get_class($this->model);
 			$query = $this->model->newQuery();
-			$models = $query->whereIn('id', $updateData['id'])->get();
-			$targetId = implode(", ", $updateData['id']);
-			if ($models->isEmpty() && $this->model->getConnection()->getSchemaBuilder()->hasColumn($this->model->getTable(), 'slug')) {
-				$query = $this->model->newQuery();
-				$models = $query->whereIn('slug', $updateData['slug'])->get();
-				$targetId = implode(", ", $updateData['slug']);
-			}
-			if (!$models) {
-				throw new \Exception("Model with ID or slug {$targetId} not found");
-			}
-			$updatedModels = [];
-			$exclude = ['id', 'slug'];
-			$targetData = array_diff_key($updateData, array_flip($exclude));
-			$models->each(function ($model) use (&$updatedModels, $targetData, $modelName, $targetId) {
-				$model->fill($targetData);
-				if ($model->save()) {
-					$updatedModels[] = $model;
-				} else {
-					throw new \Exception("Failed to update {$modelName} with ID or slug {$targetId}");
+			// take data with ids 
+			$query->whereIn('id', $ids)->chunk(200, function ($models) use (&$updatedModels, $updateData, $modelName, $ids) {
+				$targetId = implode(",", $ids);
+				foreach ($models as $model) {
+					$model->fill($updateData);
+
+					if ($model->save()) {
+						$updatedModels[] = $model;
+					} else {
+						throw new \Exception("Failed to update {$modelName} with ID or slug {$targetId}");
+					}
 				}
 			});
+
+			// Jika tidak ada model ditemukan sama sekali
+			if (empty($updatedModels)) {
+				$targetId = implode(", ", $ids);
+				throw new \Exception("Model with ID or slug {$targetId} not found");
+			}
 			DB::commit();
-			return $updatedModels;
+			return count($updatedModels);
 		} catch (\Exception $e) {
 			DB::rollBack();
 			Log::error($e->getMessage());

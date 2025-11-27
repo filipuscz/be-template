@@ -94,9 +94,10 @@ interface IBaseService
 	/**
 	 * Update multiple model instances.
 	 *
+     * @param array $ids An array of IDs or slugs of the model instances to update.
 	 * @param array $updateData An array of data to update, where the key is the ID or slug, and the value is the data to update.
 	 * @return array Updated model instances.
 	 * @throws \Exception If any update fails.
 	 */
-	public function updateMany(array $updateData): array;
+	public function updateMany(array $ids, array $updateData): ?int;
 }
