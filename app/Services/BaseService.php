@@ -4,9 +4,7 @@ namespace App\Services;
 
 use App\Contracts\IBaseService;
 use App\Enums\QueryAcceptedComparatorEnum;
-use App\Enums\WarungEnum;
 use App\Exports\ViewExcelExport;
-use App\Models\Awesome_Admin\Awesome_Notifications;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
@@ -448,6 +446,27 @@ class BaseService implements IBaseService
 			DB::rollBack();
 			Log::error($e->getMessage());
 			throw $e;
+		}
+	}
+
+	public function firebaseNotification(array $deviceTokens, string $title, string $body, array $data = [], $imageUrl = null): void
+	{
+		try {
+			$messaging = app('firebase.messaging');
+
+			$notification = Notification::create($title, $body, $imageUrl);
+			foreach ($deviceTokens as $token) {
+
+				$message = CloudMessage::new()
+					->withNotification($notification)
+					->withData($data)
+					->toToken($token);
+
+			
+				$messaging->send($message);
+			}
+		} catch (\Exception $e) {
+			Log::error("Failed to send Firebase notification: " . $e->getMessage());
 		}
 	}
 }
