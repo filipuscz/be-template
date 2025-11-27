@@ -195,6 +195,7 @@ class BaseService implements IBaseService
 		?int $limit,
 		array $orderBy,
 		QueryAcceptedComparatorEnum $comparator = QueryAcceptedComparatorEnum::EQUAL,
+		?array $filters = null,
 		?array $fields = null,
 		?array $relation = null,
 		?array $defaultOrderBy = null,
@@ -204,12 +205,27 @@ class BaseService implements IBaseService
 		$columns = $this->model->getConnection()->getSchemaBuilder()->getColumnListing($this->model->getTable());
 		$query = $this->model->newQuery();
 		// dd($any, $indexes, $limit, $orderBy, $comparator, $relation);
+
+		// Apply filters if provided
+		if (!empty($filters)) {
+			foreach ($filters as $filterColumn => $filterValue) {
+				if (in_array($filterColumn, $columns)) {
+					// if array → use whereIn
+					if (is_array($filterValue)) {
+						$query->whereIn($filterColumn, $filterValue);
+					}
+					// if single value → use where
+					else {
+						$query->where($filterColumn, $filterValue);
+					}
+				}
+			}
+		}
 		$query->where(function ($query) use ($indexes, $comparator, $any, $columns) {
 			foreach ($indexes as $column => $value) {
 				if ($comparator == QueryAcceptedComparatorEnum::LIKE) {
 					$value = "%{$value}%";
 				}
-
 				if (in_array($column, $columns)) {
 					if (is_array($value)) {
 						$query->when($any, function ($query) use ($column, $value) {
@@ -390,14 +406,22 @@ class BaseService implements IBaseService
 	 */
 	public function deleteMany(array $ids): ?int
 	{
-		$deletedCount = 0;
-
 		DB::beginTransaction();
-
 		try {
-			$deletedCount = $this->model->newQuery()->whereIn('id', $ids)->delete();
+			$deletedCount = 0;
+			$query = $this->model->newQuery()->whereIn('id', $ids);
+			$existing = $query->count();
+			if ($existing === 0) {
+				$targetId = implode(", ", $ids);
+				throw new \Exception("Model with IDs {$targetId} not found");
+			}
+			$query->chunkById(100, function ($models) use (&$deletedCount) {
+				foreach ($models as $model) {
+					$model->delete(); // call SoftDeletes + event
+					$deletedCount++;
+				}
+			});
 			DB::commit();
-
 			return $deletedCount;
 		} catch (\Exception $e) {
 			DB::rollBack();
@@ -420,26 +444,33 @@ class BaseService implements IBaseService
 
 		try {
 			$modelName = get_class($this->model);
-			$query = $this->model->newQuery();
-			// take data with ids 
-			$query->whereIn('id', $ids)->chunk(200, function ($models) use (&$updatedModels, $updateData, $modelName, $ids) {
-				$targetId = implode(",", $ids);
-				foreach ($models as $model) {
-					$model->fill($updateData);
-
-					if ($model->save()) {
-						$updatedModels[] = $model;
-					} else {
-						throw new \Exception("Failed to update {$modelName} with ID or slug {$targetId}");
-					}
-				}
-			});
-
-			// Jika tidak ada model ditemukan sama sekali
-			if (empty($updatedModels)) {
-				$targetId = implode(", ", $ids);
-				throw new \Exception("Model with ID or slug {$targetId} not found");
+			$updatedModels = [];
+	
+			// get existing models
+			$existingModels = $this->model->whereIn('id', $ids)->get();
+	
+			// check if all IDs exist
+			$existingIds = $existingModels->pluck('id')->toArray();
+			$missingIds = array_diff($ids, $existingIds);
+	
+			if (!empty($missingIds)) {
+				throw new \Exception("Model with IDs [" . implode(', ', $missingIds) . "] not found");
 			}
+	
+			// Update per chunk (for large data)
+			$this->model->whereIn('id', $ids)
+				->chunkById(200, function ($models) use (&$updatedModels, $updateData, $modelName) {
+					foreach ($models as $model) {
+						$model->fill($updateData);
+	
+						if ($model->save()) {
+							$updatedModels[] = $model;
+						} else {
+							throw new \Exception("Failed to update model {$modelName} with ID {$model->id}");
+						}
+					}
+				});
+	
 			DB::commit();
 			return count($updatedModels);
 		} catch (\Exception $e) {

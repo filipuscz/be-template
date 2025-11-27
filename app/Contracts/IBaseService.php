@@ -54,6 +54,7 @@ interface IBaseService
         ?int $limit,
         array $orderBy,
         QueryAcceptedComparatorEnum $comparator,
+        ?array $filters = null,
         ?array $fields = null,
         ?array $relation = null,
 		?array $defaultOrderBy = null,

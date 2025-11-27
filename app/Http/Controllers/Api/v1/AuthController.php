@@ -15,6 +15,11 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class AuthController extends BaseApiController
 {
+    /**
+     * Handle user login and token generation.
+     * @unauthenticated
+     * @response array{success: string, message: string, status: string, code: integer, data: User, token: string}
+     */
     public function login(LoginAuthRequest $request)
     {
         $user = $request->user();
@@ -34,6 +39,10 @@ class AuthController extends BaseApiController
         return $this->respondOK($responseData, 'Login successful');
     }
 
+    /**
+     * Retrieve the authenticated user's information.
+     * @response array{success: string, message: string, status: string, code: integer, data: User, valid: boolean}
+     */
     public function me(Request $request)
     {
         $user = $request->user();
@@ -49,6 +58,10 @@ class AuthController extends BaseApiController
         return $this->respondOK($responseData, 'Token is valid');
     }
 
+    /**
+     * Handle user logout and token revocation.
+     * @response array{success: string, message: string, status: string, code: integer}
+     */
     public function logout(Request $request)
     {
         $user = $request->user();

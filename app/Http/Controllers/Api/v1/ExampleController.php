@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\BaseApiController;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BaseBulkDestroyRequest;
+use App\Http\Requests\BaseBulkUpdateRequest;
+use App\Http\Requests\BaseIndexRequest;
 use App\Http\Requests\StoreExampleRequest;
 use App\Http\Resources\BaseResource;
 use App\Services\BaseService;
@@ -17,17 +20,20 @@ class ExampleController extends BaseApiController
     }
     /**
      * Display a listing of the resource.
+     * @response array{success: string, message: string, status: string, code: integer, data: collection,
+     * meta: array{}, links: array{}}
      */
-    public function index(Request $request)
+    public function index(BaseIndexRequest $request)
     {
-        $indexes = $this->prepareIndexes($request);
+        // getPrintableColumns
+        $indexes = $this->prepareIndexes($request->all());
         $results = $this->exampleService->findByIndexes(
             $indexes['indexes'],
             $indexes['any'],
             $indexes['limit'],
             $indexes['orderBy'],
             $indexes['qcomparator'],
-            $indexes['fields'],
+            $indexes['filters']
         );
         $formattedResponse = $this->paginateResponse($results, BaseResource::class);
         return $this->setStatusMsg($formattedResponse['meta']['total'] ? 'success' : 'failed')
@@ -44,6 +50,7 @@ class ExampleController extends BaseApiController
 
     /**
      * Store a newly created resource in storage.
+     * @response array{success: string, message: string, status: string, code: integer, data: array{}}
      */
     public function store(StoreExampleRequest $request)
     {
@@ -55,11 +62,12 @@ class ExampleController extends BaseApiController
 
     /**
      * Display the specified resource.
+     * @response array{success: string, message: string, status: string, code: integer, data: array{}}
      */
     public function show(string $idOrSlug)
     {
         $data = $this->exampleService->findById($idOrSlug);
-        throw_if((empty($data)), new NotFoundHttpException(404));
+        throw_if((empty($data)), new NotFoundHttpException("Data Not Found"));
 
         return $this->setStatusMsg("success")->respondOK(array(
             'data' => new BaseResource($data)
@@ -75,6 +83,7 @@ class ExampleController extends BaseApiController
 
     /**
      * Update the specified resource in storage.
+     * @response array{success: string, message: string, status: string, code: integer, data: array{}}
      */
     public function update(Request $request, string $idOrSlug)
     {
@@ -86,8 +95,9 @@ class ExampleController extends BaseApiController
 
     /**
      * Update multiple resources in storage.
+     * @response array{success: string, message: string, status: string, code: integer}
      */
-    public function bulkUpdate(Request $request)
+    public function bulkUpdate(BaseBulkUpdateRequest $request)
     {
         $ids = $request->input('ids', []);
         // except ids
@@ -104,6 +114,7 @@ class ExampleController extends BaseApiController
 
     /**
      * Remove the specified resource from storage.
+     * @response array{success: string, message: string, status: string, code: integer}
      */
     public function destroy(string $idOrSlug)
     {
@@ -116,8 +127,9 @@ class ExampleController extends BaseApiController
 
     /** 
      * Remove multiple resources from storage.
+     * @response array{success: string, message: string, status: string, code: integer}
      */
-    public function bulkDestroy(Request $request)
+    public function bulkDestroy(BaseBulkDestroyRequest $request)
     {
         $ids = $request->input('ids', []);
         if (empty($ids) || !is_array($ids)) {

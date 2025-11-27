@@ -228,20 +228,9 @@ class BaseApiController extends Controller
      * @param Request $request The request object.
      * @return array The prepared indexes.
      */
-    public function prepareIndexes(Request $request): array
+    public function prepareIndexes(array $indexes): array
     {
-        $request->validate([
-            'search' => 'string',
-            'orderByColumns' => 'string',
-            'any' => 'in:true,false,1,0',
-            'limit' => 'integer',
-            'comparator' => 'string',
-            'page' => 'integer',
-            'fields' => 'string',
-        ]);
-        
-        $indexes = $request->all();
-        $fields = isset($indexes['fields']) ? explode(",", $indexes['fields']) : [];
+        $filters = $indexes['filters'] ?? [];
         $orderByColumns = $indexes['orderByColumns'] ?? [];
         $orderBy = $orderByColumns ? explode(",", $orderByColumns) : [];
         $any = $indexes['any'] ?? false;
@@ -261,7 +250,7 @@ class BaseApiController extends Controller
             'limit' => $limit,
             'orderBy' => $orderBy,
             'qcomparator' => $qcomparator,
-            'fields' => $fields
+            'filters' => $filters
         ];
     }
 }
