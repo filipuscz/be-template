@@ -22,28 +22,22 @@ class UserExists implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $key = $this->throttleKey($value, $this->ip);
-
+        $key = throttleKey($value."|".$this->ip);
         if (RateLimiter::tooManyAttempts($key, $this->maxAttempts)) {
             $seconds = RateLimiter::availableIn($key);
             $fail("User $value not found. ".trans('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
-            ]));
+            ]), null);
 
             return;
         }
         if (!User::whereAny(['email', 'username'], $value)->exists()) {
             RateLimiter::hit($key);
 
-            $fail("User {$value} not found.");
+            $fail("User {$value} not found.", null);
         } else {
             RateLimiter::clear($key);
         }
-    }
-
-    protected function throttleKey(string $value, string $ip): string
-    {
-        return Str::transliterate(Str::lower($value) . '|' . $ip);
     }
 }

@@ -48,7 +48,7 @@ class LoginAuthRequest extends FormRequest
 
     protected function passedValidation()
     {
-        $this->keyUIP = $this->throttleKey();
+        $this->keyUIP = throttleKey($this->ip());
         $this->authenticate();
     }
 
@@ -101,13 +101,5 @@ class LoginAuthRequest extends FormRequest
                 'minutes' => ceil($seconds / 60),
             ]),
         ]);
-    }
-
-    /**
-     * Get the rate limiting throttle key for the request.
-     */
-    public function throttleKey(): string
-    {
-        return Str::transliterate(Str::lower($this->ip()));
     }
 }

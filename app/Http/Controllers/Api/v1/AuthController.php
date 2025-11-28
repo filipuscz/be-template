@@ -40,6 +40,36 @@ class AuthController extends BaseApiController
     }
 
     /**
+     * Register a new user.
+     * @unauthenticated
+     * @response array{success: string, message: string, status: string, code: integer, data: User, token: string}
+     */
+    public function register(Request $request)
+    {
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = User::create([
+            'name' => $validatedData['name'],
+            'email' => $validatedData['email'],
+            'password' => $validatedData['password'],
+        ]);
+
+        $deviceName = $request->header('User-Agent', 'unknown');
+        $token = $user->createToken($deviceName)->accessToken;
+
+        $responseData = array(
+            'data' => new BaseResource($user),
+            'token' => $token
+        );
+
+        return $this->respondOK($responseData, 'Registration successful');
+    }
+
+    /**
      * Retrieve the authenticated user's information.
      * @response array{success: string, message: string, status: string, code: integer, data: User, valid: boolean}
      */

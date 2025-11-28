@@ -28,16 +28,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Scramble::registerApi('api/v1', [
-            'api_path' => 'api/v1',
-        ]);
         Scramble::configure()
         ->withDocumentTransformers(function (OpenApi $openApi) {
+            $openApi->info->description = 'API for the best Todo app!';
             $openApi->components->securitySchemes['bearer'] = SecurityScheme::http('bearer');
             $openApi->security[] = new SecurityRequirement([
                 'bearer' => [],
             ]);
         });
+        Scramble::registerApi('api/v1', [
+            'api_path' => 'api/v1',
+        ]);
         Route::pattern('idOrSlug', '[0-9]+|[a-z0-9-]+');
     }
 }
