@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api\v1;
 
+use App\Enums\DefaultEnum;
 use App\Enums\StatusEnum;
+use App\Helpers\ApiTokenHelper;
 use App\Http\Controllers\BaseApiController;
-use App\Http\Requests\LoginAuthRequest;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\BaseResource;
 use App\Models\Publisher;
 use App\Models\User;
@@ -20,15 +23,12 @@ class AuthController extends BaseApiController
      * @unauthenticated
      * @response array{success: string, message: string, status: string, code: integer, data: User, token: string}
      */
-    public function login(LoginAuthRequest $request)
+    public function login(LoginRequest $request)
     {
         $user = $request->user();
-        if($user->is_active == 0)
-        {
-            throw new \Exception('Your account is inactive.');
-        }
+        throw_if(!$user, new \Exception('Invalid credentials.'));
 
-        $deviceName = $request->header('User-Agent', 'unknown');
+        $deviceName = $request->userAgent() ?? 'device_'.$user->id.'_'.now()->timestamp;
         $token = $user->createToken($deviceName)->accessToken;
         
         $responseData = array(
@@ -44,21 +44,11 @@ class AuthController extends BaseApiController
      * @unauthenticated
      * @response array{success: string, message: string, status: string, code: integer, data: User, token: string}
      */
-    public function register(Request $request)
+    public function register(RegisterRequest $request)
     {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+        $user = User::create($request->all());
 
-        $user = User::create([
-            'name' => $validatedData['name'],
-            'email' => $validatedData['email'],
-            'password' => $validatedData['password'],
-        ]);
-
-        $deviceName = $request->header('User-Agent', 'unknown');
+        $deviceName = $request->userAgent() ?? 'device_'.$user->id.'_'.now()->timestamp;
         $token = $user->createToken($deviceName)->accessToken;
 
         $responseData = array(
@@ -76,9 +66,7 @@ class AuthController extends BaseApiController
     public function me(Request $request)
     {
         $user = $request->user();
-        if (!$user) {
-            throw new NotFoundHttpException('Token is invalid.');
-        }
+        throw_if(!$user, new NotFoundHttpException('Token is invalid.'));
 
         $responseData = array(
             'data' => new BaseResource($user),
@@ -95,15 +83,22 @@ class AuthController extends BaseApiController
     public function logout(Request $request)
     {
         $user = $request->user();
-        if ($user) {
-            $user->last_login_at = now();
-            $user->save();
-            $token = $user->token();
-            $token->revoke();
 
-            return $this->respondOK(null, 'Logout successful');
-        }
+        throw_if(!$user, new AccessDeniedHttpException('User not authenticated.'));
 
-        throw new AccessDeniedHttpException('User not authenticated.');
+        $user->last_login_at = now();
+        $user->save();
+        $token = $user->token();
+        $token->revoke();
+
+        return $this->respondOK(null, 'Logout successful');
+    }
+    
+    public function generate(Request $request)
+    {
+        return $this->respondOK([
+            'header' => DefaultEnum::APITOKEN,
+            'token' => ApiTokenHelper::generate()
+        ], 'API token generated successfully');
     }
 }

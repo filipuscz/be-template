@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Auth;
 
 use App\Rules\UserExists;
 use Illuminate\Auth\Events\Lockout;
@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-class LoginAuthRequest extends FormRequest
+class LoginRequest extends FormRequest
 {
     public string $keyUIP;
     public int $decaySecond = 30;

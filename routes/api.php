@@ -1,5 +1,7 @@
 <?php
 
+use App\Helpers\ApiTokenHelper;
+use App\Http\Middleware\CheckApiToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -9,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')
     ->name('api.v1.')
+    ->middleware(CheckApiToken::class)
     ->group(function () {
         Route::name('example.')
             ->prefix('example')
@@ -29,7 +32,9 @@ Route::prefix('v1')
             ->group(function () {
                 Route::post('/login', 'login')->name('login')->middleware('guest');
                 Route::post('/logout', 'logout')->name('logout')->middleware('auth:api');
+                Route::post('/register', 'register')->name('register')->middleware('guest');
                 Route::get('/me', 'me')->name('me')->middleware('auth:api');
+                Route::get('/api-token', 'generate')->name('x-api-token')->withoutMiddleware(CheckApiToken::class);
             });
     });
 
