@@ -94,7 +94,7 @@ class AuthController extends BaseApiController
         return $this->respondOK(null, 'Logout successful');
     }
     
-    public function generate(Request $request)
+    public function generateApiToken(Request $request)
     {
         return $this->respondOK([
             'header' => DefaultEnum::APITOKEN,

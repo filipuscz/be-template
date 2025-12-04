@@ -30,11 +30,11 @@ Route::prefix('v1')
             ->prefix('auth')
             ->controller(App\Http\Controllers\Api\v1\AuthController::class)
             ->group(function () {
-                Route::post('/login', 'login')->name('login')->middleware('guest');
+                Route::post('/login', 'login')->name('login')->middleware('guest')->withoutMiddleware(CheckApiToken::class);
                 Route::post('/logout', 'logout')->name('logout')->middleware('auth:api');
                 Route::post('/register', 'register')->name('register')->middleware('guest');
                 Route::get('/me', 'me')->name('me')->middleware('auth:api');
-                Route::get('/api-token', 'generate')->name('x-api-token')->withoutMiddleware(CheckApiToken::class);
+                Route::get('/api-token', 'generateApiToken')->name('api-token')->middleware('auth:api')->withoutMiddleware(CheckApiToken::class);
             });
     });
 
