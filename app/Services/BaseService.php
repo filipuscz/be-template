@@ -4,500 +4,484 @@ namespace App\Services;
 
 use App\Contracts\IBaseService;
 use App\Enums\QueryAcceptedComparatorEnum;
-use App\Exports\ViewExcelExport;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification;
-use Spatie\Permission\Models\Permission;
-use Maatwebsite\Excel\Facades\Excel;
 
 /**
  * Class BaseService
  *
  * A base service class implementing common CRUD operations.
- *
- * @package App\Services
  */
 class BaseService implements IBaseService
 {
-	/** @var Model The model associated with this service. */
-	protected Model $model;
+    /** @var Model The model associated with this service. */
+    protected Model $model;
 
-	protected string $moduleName = "base";
+    protected string $moduleName = 'base';
 
-	/** @var int Size of queued import rows */
-	protected int $chunkSize = 1000;
+    /** @var int Size of queued import rows */
+    protected int $chunkSize = 1000;
 
-	/** @var array The columns that can be exported. */
-	protected $printableColumns = [];
+    /** @var array The columns that can be exported. */
+    protected $printableColumns = [];
 
-	/**
-	 * Constructor.
-	 *
-	 * @param Model $model The Eloquent model associated with this service.
-	 */
-	public function __construct(Model $model)
-	{
-		$this->model = $model;
-		$this->setPrintableColumns(['*']);
-	}
+    /**
+     * Constructor.
+     *
+     * @param  Model  $model  The Eloquent model associated with this service.
+     */
+    public function __construct(Model $model)
+    {
+        $this->model = $model;
+        $this->setPrintableColumns(['*']);
+    }
 
-	public function getModel(): Model
-	{
-		return $this->model;
-	}
+    public function getModel(): Model
+    {
+        return $this->model;
+    }
 
-	/**
-	 * Get the model associated with this service.
-	 *
-	 * @return Model The model associated with this service.
-	 */
-	public function getModuleName(): string
-	{
-		return $this->moduleName;
-	}
+    /**
+     * Get the model associated with this service.
+     *
+     * @return Model The model associated with this service.
+     */
+    public function getModuleName(): string
+    {
+        return $this->moduleName;
+    }
 
-	/**
-	 * Set the columns that can be exported.
-	 *
-	 * @param array $columns The columns that can be exported.
-	 * @return array
-	 */
-	public function getPrintableColumns(): array
-	{
-		return $this->printableColumns;
-	}
+    /**
+     * Set the columns that can be exported.
+     *
+     * @param  array  $columns  The columns that can be exported.
+     */
+    public function getPrintableColumns(): array
+    {
+        return $this->printableColumns;
+    }
 
-	/**
-	 * Set the columns that can be exported.
-	 *
-	 * @param array $columns The columns that can be exported.
-	 * @return self
-	 */
-	public function setPrintableColumns(array $columns = ['*']): self
-	{
-		if (in_array('*', $columns)) {
-			$this->printableColumns = $this->model->getConnection()->getSchemaBuilder()->getColumnListing($this->model->getTable());
-		} else {
-			$this->printableColumns = $columns;
-		}
+    /**
+     * Set the columns that can be exported.
+     *
+     * @param  array  $columns  The columns that can be exported.
+     */
+    public function setPrintableColumns(array $columns = ['*']): self
+    {
+        if (in_array('*', $columns)) {
+            $this->printableColumns = $this->model->getConnection()->getSchemaBuilder()->getColumnListing($this->model->getTable());
+        } else {
+            $this->printableColumns = $columns;
+        }
 
-		// remove guarded attributes from printable columns
-		$this->printableColumns = array_diff($this->printableColumns, $this->model->getGuarded());
+        // remove guarded attributes from printable columns
+        $this->printableColumns = array_diff($this->printableColumns, $this->model->getGuarded());
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Create a new model instance and persist it to the database.
-	 *
-	 * @param array $attr The attributes for the new model instance.
-	 * @return Model The created model instance.
-	 * @throws \Exception If unable to save the model.
-	 */
-	public function create(array $attr)
-	{
-		// Begin a database transaction
-		DB::beginTransaction();
+    /**
+     * Create a new model instance and persist it to the database.
+     *
+     * @param  array  $attr  The attributes for the new model instance.
+     * @return Model The created model instance.
+     *
+     * @throws \Exception If unable to save the model.
+     */
+    public function create(array $attr)
+    {
+        // Begin a database transaction
+        DB::beginTransaction();
 
-		try {
-			$modelName = get_class($this->model);
+        try {
+            $modelName = get_class($this->model);
 
-			$data = $this->model->newInstance($attr);
+            $data = $this->model->newInstance($attr);
 
-			// Save the new data to the database within the transaction
-			if ($data->save()) {
-				// Commit the transaction
-				DB::commit();
+            // Save the new data to the database within the transaction
+            if ($data->save()) {
+                // Commit the transaction
+                DB::commit();
 
-				return $data;
-			}
+                return $data;
+            }
 
-			// Rollback the transaction if saving fails
-			DB::rollBack();
-			throw new \Exception("Failed to save {$modelName} to database");
-		} catch (\Exception $e) {
-			// Rollback the transaction in case of an exception
-			DB::rollBack();
-			throw $e;
-		}
-	}
+            // Rollback the transaction if saving fails
+            DB::rollBack();
+            throw new \Exception("Failed to save {$modelName} to database");
+        } catch (\Exception $e) {
+            // Rollback the transaction in case of an exception
+            DB::rollBack();
+            throw $e;
+        }
+    }
 
-	/**
-	 * Create multiple model instances and persist them to the database.
-	 *
-	 * @param array $data An array of attributes for the new model instances.
-	 * @return array An array of created model instances.
-	 */
-	public function createMany(array $data): array
-	{
-		$storedData = [];
-		if (!empty($data)) {
-			foreach ($data as $key => $item) {
-				// Begin a database transaction
-				DB::beginTransaction();
-				try {
-					$data = $this->model->newInstance($item);
-					$data->save();
-					DB::commit();
-					$storedData[] = $data->refresh();
-				} catch (\Throwable $th) {
-					// Rollback the transaction in case of an exception
-					DB::rollBack();
-					Log::error($th->getMessage());
-				}
-			}
-		}
+    /**
+     * Create multiple model instances and persist them to the database.
+     *
+     * @param  array  $data  An array of attributes for the new model instances.
+     * @return array An array of created model instances.
+     */
+    public function createMany(array $data): array
+    {
+        $storedData = [];
+        if (! empty($data)) {
+            foreach ($data as $key => $item) {
+                // Begin a database transaction
+                DB::beginTransaction();
+                try {
+                    $data = $this->model->newInstance($item);
+                    $data->save();
+                    DB::commit();
+                    $storedData[] = $data->refresh();
+                } catch (\Throwable $th) {
+                    // Rollback the transaction in case of an exception
+                    DB::rollBack();
+                    Log::error($th->getMessage());
+                }
+            }
+        }
 
-		return $storedData;
-	}
+        return $storedData;
+    }
 
-	/**
-	 * Find a model by its ID or slug.
-	 *
-	 * @param mixed $idOrSlug The ID or slug of the model to find.
-	 * @return Model|null The found model instance, or null if not found.
-	 */
-	public function findById($idOrSlug): ?Model
-	{
-		$query = $this->model->newQuery();
-		$data = $query->find($idOrSlug);
+    /**
+     * Find a model by its ID or slug.
+     *
+     * @param  mixed  $idOrSlug  The ID or slug of the model to find.
+     * @return Model|null The found model instance, or null if not found.
+     */
+    public function findById($idOrSlug): ?Model
+    {
+        $query = $this->model->newQuery();
+        $data = $query->find($idOrSlug);
 
-		if (!$data && $this->model->getConnection()->getSchemaBuilder()->hasColumn($this->model->getTable(), 'slug')) {
-			$data = $query->where('slug', $idOrSlug)->first();
-		}
+        if (! $data && $this->model->getConnection()->getSchemaBuilder()->hasColumn($this->model->getTable(), 'slug')) {
+            $data = $query->where('slug', $idOrSlug)->first();
+        }
 
-		return $data;
-	}
+        return $data;
+    }
 
-	/**
-	 * Find model instances based on specified indexes.
-	 *
-	 * @param array $indexes An array of column-value pairs for filtering.
-	 * @param bool $any Whether to match any or all of the provided indexes.
-	 * @param int|null $limit The maximum number of results to return.
-	 * @param array $orderBy An array of columns to order the results by.
-	 * @param QueryAcceptedComparatorEnum $comparator The comparison operator for each index.
-	 * @param array|null $relation Optional related models to eager load.
-	 * @param array|null $fields Optional columns to search for a specific value.
-	 * @return Collection|\Illuminate\Pagination\LengthAwarePaginator The matching model instances.
-	 */
-	public function findByIndexes(
-		array $indexes,
-		bool $any,
-		?int $limit,
-		array $orderBy,
-		QueryAcceptedComparatorEnum $comparator = QueryAcceptedComparatorEnum::EQUAL,
-		?array $filters = null,
-		?array $fields = null,
-		?array $relation = null,
-		?array $defaultOrderBy = null,
-	) {
-		// dd($this->model);
-		// Get column names of the model's table
-		$columns = $this->model->getConnection()->getSchemaBuilder()->getColumnListing($this->model->getTable());
-		$query = $this->model->newQuery();
-		// dd($any, $indexes, $limit, $orderBy, $comparator, $relation);
+    /**
+     * Find model instances based on specified indexes.
+     *
+     * @param  array  $indexes  An array of column-value pairs for filtering.
+     * @param  bool  $any  Whether to match any or all of the provided indexes.
+     * @param  int|null  $limit  The maximum number of results to return.
+     * @param  array  $orderBy  An array of columns to order the results by.
+     * @param  QueryAcceptedComparatorEnum  $comparator  The comparison operator for each index.
+     * @param  array|null  $relation  Optional related models to eager load.
+     * @param  array|null  $fields  Optional columns to search for a specific value.
+     * @return Collection|LengthAwarePaginator The matching model instances.
+     */
+    public function findByIndexes(
+        array $indexes,
+        bool $any,
+        ?int $limit,
+        array $orderBy,
+        QueryAcceptedComparatorEnum $comparator = QueryAcceptedComparatorEnum::EQUAL,
+        ?array $filters = null,
+        ?array $fields = null,
+        ?array $relation = null,
+        ?array $defaultOrderBy = null,
+    ) {
+        // dd($this->model);
+        // Get column names of the model's table
+        $columns = $this->model->getConnection()->getSchemaBuilder()->getColumnListing($this->model->getTable());
+        $query = $this->model->newQuery();
+        // dd($any, $indexes, $limit, $orderBy, $comparator, $relation);
 
-		// Apply filters if provided
-		if (!empty($filters)) {
-			foreach ($filters as $filterColumn => $filterValue) {
-				if (in_array($filterColumn, $columns)) {
-					// if array → use whereIn
-					if (is_array($filterValue)) {
-						$query->whereIn($filterColumn, $filterValue);
-					}
-					// if single value → use where
-					else {
-						$query->where($filterColumn, $filterValue);
-					}
-				}
-			}
-		}
-		$query->where(function ($query) use ($indexes, $comparator, $any, $columns) {
-			foreach ($indexes as $column => $value) {
-				if ($comparator == QueryAcceptedComparatorEnum::LIKE) {
-					$value = "%{$value}%";
-				}
-				if (in_array($column, $columns)) {
-					if (is_array($value)) {
-						$query->when($any, function ($query) use ($column, $value) {
-							$query->orWhereIn($column, $value);
-						}, function ($query) use ($column, $value) {
-							$query->whereIn($column, $value);
-						});
-					} else {
-						$query->when($any, function ($query) use ($column, $comparator, $value) {
-							$query->orWhere($column, $comparator->value, $value);
-						}, function ($query) use ($column, $comparator, $value) {
-							$query->where($column, $comparator->value, $value);
-						});
-					}
-				}
-			}
-		});
-		$query->when(isset($indexes['search']), function ($query) use ($indexes, $fields, $columns) {
-			if (empty($fields)) {
-				$fields = array_filter($columns, function ($column) {
-					return !in_array($column, ['created_at', 'updated_at']);
-				});
-			}
-			$query->where(function ($query) use ($indexes, $fields, $columns) {
-				foreach ($fields as $target) {
-					if (in_array($target, $columns)) {
-						$query->orWhere($target, QueryAcceptedComparatorEnum::LIKE->value,  "%" . $indexes['search'] . "%");
-					}
-				}
-			});
-		});
-		// Ignore specific records if requested
-		$query->when(isset($indexes['ignore']), function ($query) use ($indexes) {
-			$query->whereNotIn('id', $indexes['ignore']);
-		});
+        // Apply filters if provided
+        if (! empty($filters)) {
+            foreach ($filters as $filterColumn => $filterValue) {
+                if (in_array($filterColumn, $columns)) {
+                    // if array → use whereIn
+                    if (is_array($filterValue)) {
+                        $query->whereIn($filterColumn, $filterValue);
+                    }
+                    // if single value → use where
+                    else {
+                        $query->where($filterColumn, $filterValue);
+                    }
+                }
+            }
+        }
+        $query->where(function ($query) use ($indexes, $comparator, $any, $columns) {
+            foreach ($indexes as $column => $value) {
+                if ($comparator == QueryAcceptedComparatorEnum::LIKE) {
+                    $value = "%{$value}%";
+                }
+                if (in_array($column, $columns)) {
+                    if (is_array($value)) {
+                        $query->when($any, function ($query) use ($column, $value) {
+                            $query->orWhereIn($column, $value);
+                        }, function ($query) use ($column, $value) {
+                            $query->whereIn($column, $value);
+                        });
+                    } else {
+                        $query->when($any, function ($query) use ($column, $comparator, $value) {
+                            $query->orWhere($column, $comparator->value, $value);
+                        }, function ($query) use ($column, $comparator, $value) {
+                            $query->where($column, $comparator->value, $value);
+                        });
+                    }
+                }
+            }
+        });
+        $query->when(isset($indexes['search']), function ($query) use ($indexes, $fields, $columns) {
+            if (empty($fields)) {
+                $fields = array_filter($columns, function ($column) {
+                    return ! in_array($column, ['created_at', 'updated_at']);
+                });
+            }
+            $query->where(function ($query) use ($indexes, $fields, $columns) {
+                foreach ($fields as $target) {
+                    if (in_array($target, $columns)) {
+                        $query->orWhere($target, QueryAcceptedComparatorEnum::LIKE->value, '%'.$indexes['search'].'%');
+                    }
+                }
+            });
+        });
+        // Ignore specific records if requested
+        $query->when(isset($indexes['ignore']), function ($query) use ($indexes) {
+            $query->whereNotIn('id', $indexes['ignore']);
+        });
 
-		// Apply special sorting (e.g., random)
-		$query->when(!empty($indexes['special_sort']) && $indexes['special_sort'] === 'random', function ($query) {
-			$query->inRandomOrder();
-		});
+        // Apply special sorting (e.g., random)
+        $query->when(! empty($indexes['special_sort']) && $indexes['special_sort'] === 'random', function ($query) {
+            $query->inRandomOrder();
+        });
 
-		if (isset($relation)) {
-			$query->with($relation);
-		}
+        if (isset($relation)) {
+            $query->with($relation);
+        }
 
-		// Apply regular sorting if no special sorting is requested
-		if (!empty($orderBy) && empty($indexes['special_sort'])) {
-			foreach ($orderBy as $orderByColumn) {
-				$orderByArray = explode(' ', $orderByColumn);
-				$orderByColumn = $orderByArray[0];
-				$orderByDirection = isset($orderByArray[1]) ? $orderByArray[1] : 'ASC';
+        // Apply regular sorting if no special sorting is requested
+        if (! empty($orderBy) && empty($indexes['special_sort'])) {
+            foreach ($orderBy as $orderByColumn) {
+                $orderByArray = explode(' ', $orderByColumn);
+                $orderByColumn = $orderByArray[0];
+                $orderByDirection = isset($orderByArray[1]) ? $orderByArray[1] : 'ASC';
 
-				if (in_array($orderByColumn, $columns)) {
-					$query->orderBy($orderByColumn, $orderByDirection);
-				}
-			}
-		} else if (!empty($defaultOrderBy)) {
-			$query->orderBy($defaultOrderBy['name'], $defaultOrderBy['order']);
-		}
+                if (in_array($orderByColumn, $columns)) {
+                    $query->orderBy($orderByColumn, $orderByDirection);
+                }
+            }
+        } elseif (! empty($defaultOrderBy)) {
+            $query->orderBy($defaultOrderBy['name'], $defaultOrderBy['order']);
+        }
 
-		if (!empty($indexes['just_query']) && $indexes['just_query'] === true) {
-			return $query;
-		}
+        if (! empty($indexes['just_query']) && $indexes['just_query'] === true) {
+            return $query;
+        }
 
-		// Pagination configuration
-		if ($limit === -1) {
-			$results = $query->get();
-		} else {
-			$perPage = $limit;
-			$currentPage = request()->get('page', 1);
-			$results = $query->paginate($perPage, ['*'], 'page', $currentPage, $query->count());
-		}
+        // Pagination configuration
+        if ($limit === -1) {
+            $results = $query->get();
+        } else {
+            $perPage = $limit;
+            $currentPage = request()->get('page', 1);
+            $results = $query->paginate($perPage, ['*'], 'page', $currentPage, $query->count());
+        }
 
-		return $results;
-	}
+        return $results;
+    }
 
-	/**
-	 * Retrieve all model instances.
-	 *
-	 * @return Collection All model instances.
-	 */
-	public function list(): Collection
-	{
-		return $this->model->all();
-	}
+    /**
+     * Retrieve all model instances.
+     *
+     * @return Collection All model instances.
+     */
+    public function list(): Collection
+    {
+        return $this->model->all();
+    }
 
-	/**
-	 * Update a model instance.
-	 *
-	 * @param array $updateData The attributes to update.
-	 * @param mixed $idOrSlug The ID or slug of the model to update.
-	 * @return Model|null The updated model instance, or null if not found.
-	 * @throws \Exception If unable to update the model.
-	 */
-	public function update(array $updateData, $idOrSlug): ?Model
-	{
-		DB::beginTransaction();
+    /**
+     * Update a model instance.
+     *
+     * @param  array  $updateData  The attributes to update.
+     * @param  mixed  $idOrSlug  The ID or slug of the model to update.
+     * @return Model|null The updated model instance, or null if not found.
+     *
+     * @throws \Exception If unable to update the model.
+     */
+    public function update(array $updateData, $idOrSlug): ?Model
+    {
+        DB::beginTransaction();
 
-		try {
-			$query = $this->model->newQuery();
-			$modelName = get_class($this->model);
+        try {
+            $query = $this->model->newQuery();
+            $modelName = get_class($this->model);
 
-			// Find the model by ID or slug
-			$model = $query->find($idOrSlug);
+            // Find the model by ID or slug
+            $model = $query->find($idOrSlug);
 
-			if (!$model && $this->model->getConnection()->getSchemaBuilder()->hasColumn($this->model->getTable(), 'slug')) {
-				$model = $query->where('slug', $idOrSlug)->first();
-			}
+            if (! $model && $this->model->getConnection()->getSchemaBuilder()->hasColumn($this->model->getTable(), 'slug')) {
+                $model = $query->where('slug', $idOrSlug)->first();
+            }
 
-			if (!$model) {
-				throw new \Exception("Model not found");
-			}
+            if (! $model) {
+                throw new \Exception('Model not found');
+            }
 
-			// Update the model attributes with the provided data
-			$model->fill($updateData);
+            // Update the model attributes with the provided data
+            $model->fill($updateData);
 
-			// Save the updated model
-			if ($model->save()) {
-				DB::commit();
-				return $model;
-			}
+            // Save the updated model
+            if ($model->save()) {
+                DB::commit();
 
-			// Rollback the transaction if saving fails
-			DB::rollBack();
-			throw new \Exception("Failed to update {$modelName}");
-		} catch (\Exception $e) {
-			// Rollback the transaction in case of an exception
-			DB::rollBack();
-			Log::error($e->getMessage());
-			throw $e;
-		}
-	}
+                return $model;
+            }
 
-	/**
-	 * Delete a model instance by its ID or slug.
-	 *
-	 * @param mixed $idOrSlug The ID or slug of the model to delete.
-	 * @return void
-	 * @throws \Exception If unable to delete the model.
-	 */
-	public function delete($idOrSlug): void
-	{
-		// Begin a database transaction
-		DB::beginTransaction();
+            // Rollback the transaction if saving fails
+            DB::rollBack();
+            throw new \Exception("Failed to update {$modelName}");
+        } catch (\Exception $e) {
+            // Rollback the transaction in case of an exception
+            DB::rollBack();
+            Log::error($e->getMessage());
+            throw $e;
+        }
+    }
 
-		try {
-			$query = $this->model->newQuery();
-			$model = $query->find($idOrSlug);
-			$modelName = get_class($this->model);
+    /**
+     * Delete a model instance by its ID or slug.
+     *
+     * @param  mixed  $idOrSlug  The ID or slug of the model to delete.
+     *
+     * @throws \Exception If unable to delete the model.
+     */
+    public function delete($idOrSlug): void
+    {
+        // Begin a database transaction
+        DB::beginTransaction();
 
-			if (!$model && $this->model->getConnection()->getSchemaBuilder()->hasColumn($this->model->getTable(), 'slug')) {
-				$model = $query->where('slug', $idOrSlug)->first();
-			}
+        try {
+            $query = $this->model->newQuery();
+            $model = $query->find($idOrSlug);
+            $modelName = get_class($this->model);
 
-			if (!$model) {
-				throw new \Exception("Model not found");
-			}
+            if (! $model && $this->model->getConnection()->getSchemaBuilder()->hasColumn($this->model->getTable(), 'slug')) {
+                $model = $query->where('slug', $idOrSlug)->first();
+            }
 
-			// Delete the model
-			if (!$model->delete()) {
-				throw new \Exception("Failed to delete {$modelName}");
-			}
+            if (! $model) {
+                throw new \Exception('Model not found');
+            }
 
-			DB::commit();
-		} catch (\Throwable $e) {
-			// Rollback the transaction in case of an exception
-			DB::rollBack();
-			throw $e;
-		}
-	}
+            // Delete the model
+            if (! $model->delete()) {
+                throw new \Exception("Failed to delete {$modelName}");
+            }
 
-	/**
-	 * Delete multiple model instances by their IDs.
-	 *
-	 * @param array $ids The IDs of the model instances to delete.
-	 * @return int|null The number of deleted instances.
-	 * @throws \Exception If unable to delete the instances.
-	 */
-	public function deleteMany(array $ids): ?int
-	{
-		DB::beginTransaction();
-		try {
-			$deletedCount = 0;
-			$query = $this->model->newQuery()->whereIn('id', $ids);
-			$existing = $query->count();
-			if ($existing === 0) {
-				$targetId = implode(", ", $ids);
-				throw new \Exception("Model with IDs {$targetId} not found");
-			}
-			$query->chunkById(100, function ($models) use (&$deletedCount) {
-				foreach ($models as $model) {
-					$model->delete(); // call SoftDeletes + event
-					$deletedCount++;
-				}
-			});
-			DB::commit();
-			return $deletedCount;
-		} catch (\Exception $e) {
-			DB::rollBack();
-			Log::error("Failed to delete multiple records: {$e->getMessage()}");
-			throw new \Exception("Failed to delete multiple records");
-		}
-	}
+            DB::commit();
+        } catch (\Throwable $e) {
+            // Rollback the transaction in case of an exception
+            DB::rollBack();
+            throw $e;
+        }
+    }
 
-	/**
-	 * Update multiple model instances.
-	 *
-	 * @param array $ids An array of IDs or slugs of the models to update.
-	 * @param array $updateData An array of data to update, where the key is the ID or slug, and the value is the data to update.
-	 * @return array Updated model instances.
-	 * @throws \Exception If any update fails.
-	 */
-	public function updateMany(array $ids, array $updateData): ?int
-	{
-		DB::beginTransaction();
+    /**
+     * Delete multiple model instances by their IDs.
+     *
+     * @param  array  $ids  The IDs of the model instances to delete.
+     * @return int|null The number of deleted instances.
+     *
+     * @throws \Exception If unable to delete the instances.
+     */
+    public function deleteMany(array $ids): ?int
+    {
+        DB::beginTransaction();
+        try {
+            $deletedCount = 0;
+            $query = $this->model->newQuery()->whereIn('id', $ids);
+            $existing = $query->count();
+            if ($existing === 0) {
+                $targetId = implode(', ', $ids);
+                throw new \Exception("Model with IDs {$targetId} not found");
+            }
+            $query->chunkById(100, function ($models) use (&$deletedCount) {
+                foreach ($models as $model) {
+                    $model->delete(); // call SoftDeletes + event
+                    $deletedCount++;
+                }
+            });
+            DB::commit();
 
-		try {
-			$modelName = get_class($this->model);
-			$updatedModels = [];
-	
-			// get existing models
-			$existingModels = $this->model->whereIn('id', $ids)->get();
-	
-			// check if all IDs exist
-			$existingIds = $existingModels->pluck('id')->toArray();
-			$missingIds = array_diff($ids, $existingIds);
-	
-			if (!empty($missingIds)) {
-				throw new \Exception("Model with IDs [" . implode(', ', $missingIds) . "] not found");
-			}
-	
-			// Update per chunk (for large data)
-			$this->model->whereIn('id', $ids)
-				->chunkById(200, function ($models) use (&$updatedModels, $updateData, $modelName) {
-					foreach ($models as $model) {
-						$model->fill($updateData);
-	
-						if ($model->save()) {
-							$updatedModels[] = $model;
-						} else {
-							throw new \Exception("Failed to update model {$modelName} with ID {$model->id}");
-						}
-					}
-				});
-	
-			DB::commit();
-			return count($updatedModels);
-		} catch (\Exception $e) {
-			DB::rollBack();
-			Log::error($e->getMessage());
-			throw $e;
-		}
-	}
+            return $deletedCount;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Failed to delete multiple records: {$e->getMessage()}");
+            throw new \Exception('Failed to delete multiple records');
+        }
+    }
 
-	public function firebaseNotification(array $deviceTokens, string $title, string $body, array $data = [], $imageUrl = null): void
-	{
-		try {
-			$messaging = app('firebase.messaging');
+    /**
+     * Update multiple model instances.
+     *
+     * @param  array  $ids  An array of IDs or slugs of the models to update.
+     * @param  array  $updateData  An array of data to update, where the key is the ID or slug, and the value is the data to update.
+     * @return array Updated model instances.
+     *
+     * @throws \Exception If any update fails.
+     */
+    public function updateMany(array $ids, array $updateData): ?int
+    {
+        return DB::transaction(function () use ($ids, $updateData) {
+            // check if all IDs exist
+            $existingIds = $this->model->whereIn('id', $ids)->pluck('id')->toArray();
+            $missingIds = array_diff($ids, $existingIds);
 
-			$notification = Notification::create($title, $body, $imageUrl);
-			foreach ($deviceTokens as $token) {
+            if (! empty($missingIds)) {
+                throw new \Exception('Model with IDs ['.implode(', ', $missingIds).'] not found');
+            }
 
-				$message = CloudMessage::new()
-					->withNotification($notification)
-					->withData($data)
-					->toToken($token);
+            $updatedCount = 0;
 
-			
-				$messaging->send($message);
-			}
-		} catch (\Exception $e) {
-			Log::error("Failed to send Firebase notification: " . $e->getMessage());
-		}
-	}
+            // Update per chunk (for large data)
+            $this->model->whereIn('id', $ids)
+                ->chunkById(200, function ($models) use (&$updatedCount, $updateData) {
+                    foreach ($models as $model) {
+                        $model->fill($updateData);
+
+                        if ($model->save()) {
+                            $updatedCount++;
+                        } else {
+                            throw new \Exception('Failed to update model '.get_class($model)." with ID {$model->id}");
+                        }
+                    }
+                });
+
+            return $updatedCount;
+        });
+    }
+
+    public function firebaseNotification(array $deviceTokens, string $title, string $body, array $data = [], $imageUrl = null): void
+    {
+        try {
+            $messaging = app('firebase.messaging');
+
+            $notification = Notification::create($title, $body, $imageUrl);
+            foreach ($deviceTokens as $token) {
+
+                $message = CloudMessage::new()
+                    ->withNotification($notification)
+                    ->withData($data)
+                    ->toToken($token);
+
+                $messaging->send($message);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send Firebase notification: '.$e->getMessage());
+        }
+    }
 }
