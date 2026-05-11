@@ -41,11 +41,11 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         })->render(function (ValidationException $e, Request $request) {
             if ($request->wantsJson()) {
-                return (new BaseApiController)->setStatusMsg('failed')->generateResponse(422, array("errors" => $e->errors()), $e->getMessage(), false);
+                return (new BaseApiController)->setStatusMsg('failed')->generateResponse(422, ["errors" => $e->errors()], $e->getMessage(), false);
             }
         })->render(function (InvalidFormatException $e, Request $request) {
             if ($request->wantsJson()) {
-                return (new BaseApiController)->setStatusMsg('failed')->generateResponse(400, array(), $e->getMessage(), false);
+                return (new BaseApiController)->setStatusMsg('failed')->generateResponse(400, [], $e->getMessage(), false);
             }
         })->render(function (\Throwable $e, Request $request) {
             if ($request->wantsJson()) {

@@ -55,9 +55,9 @@ class ExampleController extends BaseApiController
     public function store(StoreExampleRequest $request)
     {
         $data = $this->exampleService->create($request->all());
-        return $this->respondOK(array(
+        return $this->respondOK([
             'data' => new BaseResource($data),
-        ));
+        ]);
     }
 
     /**
@@ -69,9 +69,9 @@ class ExampleController extends BaseApiController
         $data = $this->exampleService->findById($idOrSlug);
         throw_if((empty($data)), new NotFoundHttpException("Data Not Found"));
 
-        return $this->setStatusMsg("success")->respondOK(array(
+        return $this->setStatusMsg("success")->respondOK([
             'data' => new BaseResource($data)
-        ));
+        ]);
     }
 
     /**
@@ -88,9 +88,9 @@ class ExampleController extends BaseApiController
     public function update(Request $request, string $idOrSlug)
     {
         $data = $this->exampleService->update($request->all(), $idOrSlug);
-        return $this->respondOK(array(
+        return $this->respondOK([
             'data' => new BaseResource($data),
-        ));
+        ]);
     }
 
     /**
