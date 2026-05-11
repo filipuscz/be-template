@@ -31,10 +31,10 @@ class AuthController extends BaseApiController
         $deviceName = $request->userAgent() ?? 'device_'.$user->id.'_'.now()->timestamp;
         $token = $user->createToken($deviceName)->accessToken;
         
-        $responseData = array(
+        $responseData = [
             'data' => new BaseResource($user),
             'token' => $token
-        );
+        ];
 
         return $this->respondOK($responseData, 'Login successful');
     }
@@ -51,10 +51,10 @@ class AuthController extends BaseApiController
         $deviceName = $request->userAgent() ?? 'device_'.$user->id.'_'.now()->timestamp;
         $token = $user->createToken($deviceName)->accessToken;
 
-        $responseData = array(
+        $responseData = [
             'data' => new BaseResource($user),
             'token' => $token
-        );
+        ];
 
         return $this->respondOK($responseData, 'Registration successful');
     }
@@ -68,10 +68,10 @@ class AuthController extends BaseApiController
         $user = $request->user();
         throw_if(!$user, new NotFoundHttpException('Token is invalid.'));
 
-        $responseData = array(
+        $responseData = [
             'data' => new BaseResource($user),
             'valid' => true,
-        );
+        ];
 
         return $this->respondOK($responseData, 'Token is valid');
     }

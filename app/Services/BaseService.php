@@ -138,7 +138,7 @@ class BaseService implements IBaseService
 	 */
 	public function createMany(array $data): array
 	{
-		$storedData = array();
+		$storedData = [];
 		if (!empty($data)) {
 			foreach ($data as $key => $item) {
 				// Begin a database transaction
