@@ -19,4 +19,9 @@ return [
     'data_not_found' => 'Data Not Found',
     'resources_updated' => ':count resources have been updated',
     'resources_deleted' => ':count resources have been deleted',
+    'login_successful' => 'Login successful',
+    'registration_successful' => 'Registration successful',
+    'logout_successful' => 'Logout successful',
+    'token_valid' => 'Token is valid',
+    'api_token_generated' => 'API token generated successfully',
 ];

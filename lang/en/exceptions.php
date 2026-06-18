@@ -11,4 +11,7 @@ return [
     'no_ids_for_update' => 'No IDs provided for update',
     'no_data_for_update' => 'No data provided for update',
     'no_ids_for_deletion' => 'No IDs provided for deletion',
+    'invalid_credentials' => 'Invalid credentials.',
+    'user_not_authenticated' => 'User not authenticated.',
+    'token_invalid' => 'Token is invalid.',
 ];

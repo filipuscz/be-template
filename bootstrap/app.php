@@ -1,16 +1,17 @@
 <?php
 
 use App\Http\Controllers\BaseApiController;
+use App\Http\Middleware\LocalizationMiddleware;
 use Carbon\Exceptions\InvalidFormatException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -20,7 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->append(LocalizationMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (AuthenticationException $e, Request $request) {
@@ -37,17 +38,17 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         })->render(function (MethodNotAllowedHttpException $e, Request $request) {
             if ($request->wantsJson()) {
-                return (new BaseApiController)->setStatusCode(405)->setStatusMsg("failed")->respondDetail($e->getMessage(), false);
+                return (new BaseApiController)->setStatusCode(405)->setStatusMsg('failed')->respondDetail($e->getMessage(), false);
             }
         })->render(function (ValidationException $e, Request $request) {
             if ($request->wantsJson()) {
-                return (new BaseApiController)->setStatusMsg('failed')->generateResponse(422, ["errors" => $e->errors()], $e->getMessage(), false);
+                return (new BaseApiController)->setStatusMsg('failed')->generateResponse(422, ['errors' => $e->errors()], $e->getMessage(), false);
             }
         })->render(function (InvalidFormatException $e, Request $request) {
             if ($request->wantsJson()) {
                 return (new BaseApiController)->setStatusMsg('failed')->generateResponse(400, [], $e->getMessage(), false);
             }
-        })->render(function (\Throwable $e, Request $request) {
+        })->render(function (Throwable $e, Request $request) {
             if ($request->wantsJson()) {
                 return (new BaseApiController)->respondInternalError(null, $e->getMessage());
             }

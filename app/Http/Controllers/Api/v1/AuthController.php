@@ -9,13 +9,15 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\BaseResource;
 use App\Models\User;
+use App\Services\AuthService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class AuthController extends BaseApiController
 {
+    public function __construct(private AuthService $authService) {}
+
     /**
      * Handle user login and token generation.
      *
@@ -26,17 +28,16 @@ class AuthController extends BaseApiController
     public function login(LoginRequest $request)
     {
         $user = $request->user();
-        throw_if(! $user, new \Exception('Invalid credentials.'));
+        throw_if(! $user, new \Exception(__('exceptions.invalid_credentials')));
 
-        $deviceName = $request->userAgent() ?? 'device_'.$user->id.'_'.now()->timestamp;
-        $token = $user->createToken($deviceName)->accessToken;
+        $result = $this->authService->login($user, $request->userAgent() ?? '');
 
         $responseData = [
-            'data' => new BaseResource($user),
-            'token' => $token,
+            'data' => new BaseResource($result['user']),
+            'token' => $result['token'],
         ];
 
-        return $this->respondOK($responseData, 'Login successful');
+        return $this->respondOK($responseData, __('messages.login_successful'));
     }
 
     /**
@@ -48,19 +49,18 @@ class AuthController extends BaseApiController
      */
     public function register(RegisterRequest $request)
     {
-        $responseData = DB::transaction(function () use ($request) {
-            $user = User::create($request->all());
+        $result = $this->authService->register(
+            $request->all(),
+            $request->userAgent() ?? '',
+            $request->ip()
+        );
 
-            $deviceName = $request->userAgent() ?? 'device_'.$user->id.'_'.now()->timestamp;
-            $token = $user->createToken($deviceName)->accessToken;
+        $responseData = [
+            'data' => new BaseResource($result['user']),
+            'token' => $result['token'],
+        ];
 
-            return [
-                'data' => new BaseResource($user),
-                'token' => $token,
-            ];
-        });
-
-        return $this->respondOK($responseData, 'Registration successful');
+        return $this->respondOK($responseData, __('messages.registration_successful'));
     }
 
     /**
@@ -71,14 +71,14 @@ class AuthController extends BaseApiController
     public function me(Request $request)
     {
         $user = $request->user();
-        throw_if(! $user, new NotFoundHttpException('Token is invalid.'));
+        throw_if(! $user, new NotFoundHttpException(__('exceptions.token_invalid')));
 
         $responseData = [
             'data' => new BaseResource($user),
             'valid' => true,
         ];
 
-        return $this->respondOK($responseData, 'Token is valid');
+        return $this->respondOK($responseData, __('messages.token_valid'));
     }
 
     /**
@@ -90,14 +90,11 @@ class AuthController extends BaseApiController
     {
         $user = $request->user();
 
-        throw_if(! $user, new AccessDeniedHttpException('User not authenticated.'));
+        throw_if(! $user, new AccessDeniedHttpException(__('exceptions.user_not_authenticated')));
 
-        $user->last_login_at = now();
-        $user->save();
-        $token = $user->token();
-        $token->revoke();
+        $this->authService->logout($user);
 
-        return $this->respondOK(null, 'Logout successful');
+        return $this->respondOK(null, __('messages.logout_successful'));
     }
 
     public function generateApiToken(Request $request)
@@ -105,6 +102,6 @@ class AuthController extends BaseApiController
         return $this->respondOK([
             'header' => DefaultEnum::APITOKEN,
             'token' => ApiTokenHelper::generate(),
-        ], 'API token generated successfully');
+        ], __('messages.api_token_generated'));
     }
 }
