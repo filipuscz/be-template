@@ -66,10 +66,10 @@ class PermissionController extends BaseApiController
     {
         $ids = $request->input('ids', []);
         $updateData = $request->except('ids');
-        if (empty($ids) || ! is_array($ids)) {
+        if (empty($ids)) {
             throw new NotFoundHttpException(__('exceptions.no_ids_for_update'));
         }
-        if (empty($updateData) || ! is_array($updateData)) {
+        if (empty($updateData)) {
             throw new NotFoundHttpException(__('exceptions.no_data_for_update'));
         }
         $count = $this->permissionService->updateMany($ids, $updateData);
@@ -90,7 +90,7 @@ class PermissionController extends BaseApiController
     public function bulkDestroy(BaseBulkDestroyRequest $request): JsonResponse
     {
         $ids = $request->input('ids', []);
-        if (empty($ids) || ! is_array($ids)) {
+        if (empty($ids)) {
             throw new NotFoundHttpException(__('exceptions.no_ids_for_deletion'));
         }
         $count = $this->permissionService->deleteMany($ids);

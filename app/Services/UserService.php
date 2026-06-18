@@ -22,6 +22,7 @@ class UserService extends BaseService
                 $data['password'] = Hash::make($data['password']);
             }
 
+            /** @var \App\Models\User $user */
             $user = parent::create($data);
 
             if (isset($data['roles'])) {
@@ -44,6 +45,7 @@ class UserService extends BaseService
                 unset($data['password']);
             }
 
+            /** @var \App\Models\User|null $user */
             $user = parent::update($data, $idOrSlug);
 
             if ($user) {

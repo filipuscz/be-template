@@ -14,6 +14,7 @@ class RoleService extends BaseService
 
     public function create(array $data): Model
     {
+        /** @var \Spatie\Permission\Models\Role $role */
         $role = parent::create($data);
 
         if (isset($data['permissions'])) {
@@ -25,6 +26,7 @@ class RoleService extends BaseService
 
     public function update(array $data, $idOrSlug): ?Model
     {
+        /** @var \Spatie\Permission\Models\Role|null $role */
         $role = parent::update($data, $idOrSlug);
 
         if (isset($data['permissions']) && $role) {

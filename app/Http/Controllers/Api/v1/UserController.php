@@ -32,8 +32,11 @@ class UserController extends BaseApiController
         );
 
         if ($results instanceof LengthAwarePaginator) {
-            $results->getCollection()->load(['roles', 'detail']);
+            /** @var \Illuminate\Database\Eloquent\Collection $collection */
+            $collection = $results->getCollection();
+            $collection->load(['roles', 'detail']);
         } else {
+            /** @var \Illuminate\Database\Eloquent\Collection $results */
             $results->load(['roles', 'detail']);
         }
 
@@ -75,10 +78,10 @@ class UserController extends BaseApiController
     {
         $ids = $request->input('ids', []);
         $updateData = $request->except('ids');
-        if (empty($ids) || ! is_array($ids)) {
+        if (empty($ids)) {
             throw new NotFoundHttpException(__('exceptions.no_ids_for_update'));
         }
-        if (empty($updateData) || ! is_array($updateData)) {
+        if (empty($updateData)) {
             throw new NotFoundHttpException(__('exceptions.no_data_for_update'));
         }
         $count = $this->userService->updateMany($ids, $updateData);
@@ -99,7 +102,7 @@ class UserController extends BaseApiController
     public function bulkDestroy(BulkDestroyRequest $request): JsonResponse
     {
         $ids = $request->input('ids', []);
-        if (empty($ids) || ! is_array($ids)) {
+        if (empty($ids)) {
             throw new NotFoundHttpException(__('exceptions.no_ids_for_deletion'));
         }
         $count = $this->userService->deleteMany($ids);

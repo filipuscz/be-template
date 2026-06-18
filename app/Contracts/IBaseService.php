@@ -48,7 +48,7 @@ interface IBaseService
      * @param  array|null  $relation  Optional relation to include in the query.
      * @param  array|null  $defaultOrderBy  Default order by columns.
      * @param  array|null  $fields  Columns to search in.
-     * @return list of data matching the criteria.
+     * @return Collection|LengthAwarePaginator|Builder data matching the criteria.
      */
     public function findByIndexes(
         array $indexes,
@@ -72,9 +72,9 @@ interface IBaseService
     /**
      * Update a records
      *
-     * @param array attributes data.
+     * @param array $data attributes data.
      * @param  $idOrSlug  id or slug of instance to delete.
-     * @return Model updated instance
+     * @return Model|null updated instance
      */
     public function update(array $data, $idOrSlug): ?Model;
 
@@ -98,7 +98,7 @@ interface IBaseService
      *
      * @param  array  $ids  An array of IDs or slugs of the model instances to update.
      * @param  array  $updateData  An array of data to update, where the key is the ID or slug, and the value is the data to update.
-     * @return array Updated model instances.
+     * @return int|null Updated model instances count.
      *
      * @throws \Exception If any update fails.
      */

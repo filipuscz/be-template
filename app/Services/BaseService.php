@@ -431,7 +431,7 @@ class BaseService implements IBaseService
      *
      * @param  array  $ids  An array of IDs or slugs of the models to update.
      * @param  array  $updateData  An array of data to update, where the key is the ID or slug, and the value is the data to update.
-     * @return array Updated model instances.
+     * @return int|null Updated model instances count.
      *
      * @throws \Exception If any update fails.
      */
@@ -457,7 +457,7 @@ class BaseService implements IBaseService
                         if ($model->save()) {
                             $updatedCount++;
                         } else {
-                            throw new \Exception(__('exceptions.failed_to_update_model_with_id', ['model' => get_class($model), 'id' => $model->id]));
+                            throw new \Exception(__('exceptions.failed_to_update_model_with_id', ['model' => get_class($model), 'id' => $model->getKey()]));
                         }
                     }
                 });

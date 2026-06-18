@@ -90,7 +90,7 @@ class BaseApiController extends Controller
 
     public function respondRedirect(string $url, int $status = 302, array $headers = []): JsonResponse
     {
-        return $this->generateResponse($status, ['redirect_uri' => $url], null, true, $headers);
+        return $this->generateResponse($status, ['redirect_uri' => $url], null, true)->withHeaders($headers);
     }
 
     public function respondBadRequest(?array $extras = null, ?string $message = null, bool $success = false): JsonResponse
@@ -203,8 +203,6 @@ class BaseApiController extends Controller
                 ],
             ];
         }
-
-        throw new \InvalidArgumentException('Invalid type for $paginatedData');
     }
 
     public function formatErrors(array $errors): array

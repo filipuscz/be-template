@@ -2,7 +2,13 @@
 
 namespace App\Http\Resources;
 
-class NotificationResource extends BaseResource
+use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Notifications\DatabaseNotification;
+
+/**
+ * @mixin DatabaseNotification
+ */
+class NotificationResource extends JsonResource
 {
     public function toArray($request): array
     {

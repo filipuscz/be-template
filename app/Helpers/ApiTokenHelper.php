@@ -17,7 +17,7 @@ class ApiTokenHelper
         // Encrypt payload
         $encrypted = Crypt::encryptString($payload);
 
-        // Create signature
+        /** @phpstan-ignore larastan.noEnvCallsOutsideOfConfig */
         $signature = hash_hmac('sha256', $encrypted, env('API_SECRET_KEY'));
 
         // Final token
@@ -25,7 +25,9 @@ class ApiTokenHelper
     }
 
     public static function validation($header) {
+        /** @phpstan-ignore larastan.noEnvCallsOutsideOfConfig */
         $secret = env('API_SECRET_KEY');
+        /** @phpstan-ignore larastan.noEnvCallsOutsideOfConfig */
         $expiryHours = (int) env('API_TOKEN_EXPIRE_HOURS', 1);
         // Extract token
         $decoded = base64_decode($header);
