@@ -30,7 +30,7 @@ class AuthController extends BaseApiController
         $user = $request->user();
         throw_if(! $user, new \Exception(__('exceptions.invalid_credentials')));
 
-        $result = $this->authService->login($user, $request->userAgent() ?? '');
+        $result = $this->authService->login($user, $request->userAgent() ?? '', $request->ip());
 
         $responseData = [
             'data' => new BaseResource($result['user']),

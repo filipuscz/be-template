@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\BaseApiController;
-use App\Http\Requests\BaseBulkDestroyRequest;
-use App\Http\Requests\BaseBulkUpdateRequest;
-use App\Http\Requests\BaseIndexRequest;
+use App\Http\Requests\Example\BulkDestroyRequest;
+use App\Http\Requests\Example\BulkUpdateRequest;
+use App\Http\Requests\Example\DestroyRequest;
+use App\Http\Requests\Example\IndexRequest;
+use App\Http\Requests\Example\ShowRequest;
 use App\Http\Requests\Example\StoreUpdateRequest;
 use App\Http\Resources\ExampleResource;
 use App\Services\ExampleService;
@@ -22,7 +24,7 @@ class ExampleController extends BaseApiController
      * @response array{success: string, message: string, status: string, code: integer, data: collection,
      * meta: array{}, links: array{}}
      */
-    public function index(BaseIndexRequest $request): JsonResponse
+    public function index(IndexRequest $request): JsonResponse
     {
         // getPrintableColumns
         $indexes = $this->prepareIndexes($request->all());
@@ -67,7 +69,7 @@ class ExampleController extends BaseApiController
      *
      * @response array{success: string, message: string, status: string, code: integer, data: array{}}
      */
-    public function show(string $idOrSlug): JsonResponse
+    public function show(ShowRequest $request, string $idOrSlug): JsonResponse
     {
         $data = $this->exampleService->findById($idOrSlug);
         throw_if((empty($data)), new NotFoundHttpException(__('messages.data_not_found')));
@@ -101,7 +103,7 @@ class ExampleController extends BaseApiController
      *
      * @response array{success: string, message: string, status: string, code: integer}
      */
-    public function bulkUpdate(BaseBulkUpdateRequest $request): JsonResponse
+    public function bulkUpdate(BulkUpdateRequest $request): JsonResponse
     {
         $ids = $request->input('ids', []);
         // except ids
@@ -122,7 +124,7 @@ class ExampleController extends BaseApiController
      *
      * @response array{success: string, message: string, status: string, code: integer}
      */
-    public function destroy(string $idOrSlug): JsonResponse
+    public function destroy(DestroyRequest $request, string $idOrSlug): JsonResponse
     {
         $data = $this->exampleService->findById($idOrSlug);
         throw_if(! $data, new NotFoundHttpException(__('messages.data_not_found')));
@@ -137,7 +139,7 @@ class ExampleController extends BaseApiController
      *
      * @response array{success: string, message: string, status: string, code: integer}
      */
-    public function bulkDestroy(BaseBulkDestroyRequest $request): JsonResponse
+    public function bulkDestroy(BulkDestroyRequest $request): JsonResponse
     {
         $ids = $request->input('ids', []);
         if (empty($ids) || ! is_array($ids)) {

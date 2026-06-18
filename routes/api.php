@@ -2,9 +2,13 @@
 
 use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\ExampleController;
+use App\Http\Controllers\Api\v1\PermissionController;
+use App\Http\Controllers\Api\v1\RoleController;
+use App\Http\Controllers\Api\v1\UserController;
 use App\Http\Middleware\CheckApiToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Spatie\Permission\Middleware\RoleMiddleware;
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -14,10 +18,52 @@ Route::prefix('v1')
     ->name('api.v1.')
     ->middleware(CheckApiToken::class)
     ->group(function () {
+        Route::name('user.')
+            ->prefix('user')
+            ->middleware('auth:api')
+            ->controller(UserController::class)
+            ->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::post('/', 'store')->name('store');
+                Route::get('/show/{idOrSlug}', 'show')->name('show');
+                Route::put('/update/{idOrSlug}', 'update')->name('update');
+                Route::delete('/delete/{idOrSlug}', 'destroy')->name('delete');
+                Route::put('/bulk_action/update', 'bulkUpdate')->name('bulk_action.update');
+                Route::match(['delete', 'post'], '/bulk_action/destroy', 'bulkDestroy')->name('bulk_action.destroy');
+            });
+
         Route::name('example.')
             ->prefix('example')
             ->middleware('auth:api')
             ->controller(ExampleController::class)
+            ->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::post('/', 'store')->name('store');
+                Route::get('/show/{idOrSlug}', 'show')->name('show');
+                Route::put('/update/{idOrSlug}', 'update')->name('update');
+                Route::delete('/delete/{idOrSlug}', 'destroy')->name('delete');
+                Route::put('/bulk_action/update', 'bulkUpdate')->name('bulk_action.update');
+                Route::match(['delete', 'post'], '/bulk_action/destroy', 'bulkDestroy')->name('bulk_action.destroy');
+            });
+
+        Route::name('role.')
+            ->prefix('role')
+            ->middleware(['auth:api', RoleMiddleware::class.':admin'])
+            ->controller(RoleController::class)
+            ->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::post('/', 'store')->name('store');
+                Route::get('/show/{idOrSlug}', 'show')->name('show');
+                Route::put('/update/{idOrSlug}', 'update')->name('update');
+                Route::delete('/delete/{idOrSlug}', 'destroy')->name('delete');
+                Route::put('/bulk_action/update', 'bulkUpdate')->name('bulk_action.update');
+                Route::match(['delete', 'post'], '/bulk_action/destroy', 'bulkDestroy')->name('bulk_action.destroy');
+            });
+
+        Route::name('permission.')
+            ->prefix('permission')
+            ->middleware(['auth:api', RoleMiddleware::class.':admin'])
+            ->controller(PermissionController::class)
             ->group(function () {
                 Route::get('/', 'index')->name('index');
                 Route::post('/', 'store')->name('store');
