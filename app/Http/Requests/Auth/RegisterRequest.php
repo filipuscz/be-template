@@ -41,26 +41,4 @@ class RegisterRequest extends FormRequest
             'password_confirmation' => 'required|string|min:8',
         ];
     }
-
-    /**
-     * Get the error messages for the defined validation rules.
-     */
-    public function messages(): array
-    {
-        return [
-            'name.required' => 'Full name is required.',
-            'name.string' => 'Full name must be a string.',
-            'username.required' => 'Username is required.',
-            'username.string' => 'Username must be a string.',
-            'username.unique' => 'Username is already taken.',
-            'email.required' => 'Email is required.',
-            'email.string' => 'Email must be a string.',
-            'email.email' => 'Email must be a valid email address.',
-            'email.unique' => 'Email is already taken.',
-            'password.required' => 'Password is required.',
-            'password.string' => 'Password must be a string.',
-            'password.min' => 'Password must be at least 8 characters.',
-            'password.confirmed' => 'Password confirmation does not match.',
-        ];
-    }
 }

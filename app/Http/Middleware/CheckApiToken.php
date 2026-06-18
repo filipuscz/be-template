@@ -17,10 +17,10 @@ class CheckApiToken
     public function handle(Request $request, Closure $next): Response
     {
         $header = $request->header('X-API-TOKEN');
-        throw_if(! $header, new \Exception('API token is missing from the request headers.'));
+        throw_if(! $header, new \Exception(__('exceptions.api_token_missing')));
 
         $boolValidation = ApiTokenHelper::validation($header);
-        throw_if(! $boolValidation, new \Exception('API token validation failed.'));
+        throw_if(! $boolValidation, new \Exception(__('exceptions.api_token_validation_failed')));
 
         return $next($request);
     }

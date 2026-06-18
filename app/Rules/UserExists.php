@@ -25,7 +25,7 @@ class UserExists implements ValidationRule
         $key = throttleKey($value.'|'.$this->ip);
         if (RateLimiter::tooManyAttempts($key, $this->maxAttempts)) {
             $seconds = RateLimiter::availableIn($key);
-            $fail("User $value not found. ".trans('auth.throttle', [
+            $fail(__('auth.user_not_found', ['user' => $value]).' '.__('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]), null);
@@ -35,7 +35,7 @@ class UserExists implements ValidationRule
         if (! User::whereAny(['email', 'username'], $value)->exists()) {
             RateLimiter::hit($key);
 
-            $fail("User {$value} not found.", null);
+            $fail(__('auth.user_not_found', ['user' => $value]), null);
         } else {
             RateLimiter::clear($key);
         }

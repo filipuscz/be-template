@@ -36,13 +36,13 @@ class ApiTokenHelper
 
         // Validate signature
         $expectedSignature = hash_hmac('sha256', $encrypted, $secret);
-        throw_if(! hash_equals($expectedSignature, $signature), new \Exception('Invalid API token signature.'));
+        throw_if(! hash_equals($expectedSignature, $signature), new \Exception(__('exceptions.invalid_api_token_signature')));
         // Decrypt payload
         $decrypted = Crypt::decryptString($encrypted);
         [$timestamp, $random] = explode('|', $decrypted);
         $tokenDate = Carbon::createFromFormat('YmdHis', $timestamp);
         $expiryTime = $tokenDate->clone()->addHours($expiryHours);
-        throw_if(now()->greaterThan($expiryTime), new \Exception('API token has expired.'));
+        throw_if(now()->greaterThan($expiryTime), new \Exception(__('exceptions.api_token_expired')));
 
         return true;
     }

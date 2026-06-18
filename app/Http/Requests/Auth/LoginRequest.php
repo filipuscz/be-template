@@ -39,16 +39,6 @@ class LoginRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'password.required' => 'Password is required.',
-            'password.string' => 'Password must be a string.',
-            'username.required' => 'Username is required.',
-            'username.string' => 'Full name must be a string.',
-        ];
-    }
-
     protected function passedValidation()
     {
         $this->keyUIP = throttleKey($this->ip());
@@ -79,7 +69,7 @@ class LoginRequest extends FormRequest
         if (! Auth::attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->keyUIP, $this->decaySecond);
             throw ValidationException::withMessages([
-                'password' => 'These credentials do not match our records.',
+                'password' => __('auth.failed'),
             ]);
         }
 

@@ -14,4 +14,8 @@ return [
     'invalid_credentials' => 'Invalid credentials.',
     'user_not_authenticated' => 'User not authenticated.',
     'token_invalid' => 'Token is invalid.',
+    'api_token_missing' => 'API token is missing from the request headers.',
+    'api_token_validation_failed' => 'API token validation failed.',
+    'invalid_api_token_signature' => 'Invalid API token signature.',
+    'api_token_expired' => 'API token has expired.',
 ];
