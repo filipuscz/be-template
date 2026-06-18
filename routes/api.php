@@ -97,6 +97,7 @@ Route::prefix('v1')
             });
         Route::name('auth.')
             ->prefix('auth')
+            ->middleware('throttle:auth')
             ->controller(AuthController::class)
             ->group(function () {
                 Route::post('/login', 'login')->name('login')->middleware('guest')->withoutMiddleware(CheckApiToken::class);

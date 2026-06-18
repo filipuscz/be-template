@@ -24,4 +24,6 @@ return [
     'logout_successful' => 'Logout successful',
     'token_valid' => 'Token is valid',
     'api_token_generated' => 'API token generated successfully',
+    'welcome_title' => 'Welcome to :app_name!',
+    'welcome_message' => 'Thank you for registering. We are excited to have you on board!',
 ];

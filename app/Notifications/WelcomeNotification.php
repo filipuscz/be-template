@@ -35,8 +35,8 @@ class WelcomeNotification extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'title' => 'Welcome to '.config('app.name', 'our platform').'!',
-            'message' => 'Thank you for registering. We are excited to have you on board!',
+            'title' => __('messages.welcome_title', ['app_name' => config('app.name', 'our platform')]),
+            'message' => __('messages.welcome_message'),
             'type' => 'system_greeting',
         ];
     }
