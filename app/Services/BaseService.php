@@ -31,6 +31,9 @@ class BaseService implements IBaseService
     /** @var array The columns that can be exported. */
     protected $printableColumns = [];
 
+    /** @var array|null The cached columns of the table. */
+    protected ?array $tableColumns = null;
+
     /**
      * Constructor.
      *
@@ -39,7 +42,20 @@ class BaseService implements IBaseService
     public function __construct(Model $model)
     {
         $this->model = $model;
-        $this->setPrintableColumns(['*']);
+    }
+
+    /**
+     * Get the columns of the table.
+     *
+     * @return array The columns of the table.
+     */
+    protected function getTableColumns(): array
+    {
+        if ($this->tableColumns === null) {
+            $this->tableColumns = $this->model->getConnection()->getSchemaBuilder()->getColumnListing($this->model->getTable());
+        }
+
+        return $this->tableColumns;
     }
 
     public function getModel(): Model
@@ -75,7 +91,7 @@ class BaseService implements IBaseService
     public function setPrintableColumns(array $columns = ['*']): self
     {
         if (in_array('*', $columns)) {
-            $this->printableColumns = $this->model->getConnection()->getSchemaBuilder()->getColumnListing($this->model->getTable());
+            $this->printableColumns = $this->getTableColumns();
         } else {
             $this->printableColumns = $columns;
         }
@@ -96,30 +112,18 @@ class BaseService implements IBaseService
      */
     public function create(array $attr): Model
     {
-        // Begin a database transaction
-        DB::beginTransaction();
-
-        try {
+        return DB::transaction(function () use ($attr) {
             $modelName = get_class($this->model);
 
             $data = $this->model->newInstance($attr);
 
             // Save the new data to the database within the transaction
             if ($data->save()) {
-                // Commit the transaction
-                DB::commit();
-
                 return $data;
             }
 
-            // Rollback the transaction if saving fails
-            DB::rollBack();
             throw new \Exception(__('exceptions.failed_to_save', ['model' => $modelName]));
-        } catch (\Exception $e) {
-            // Rollback the transaction in case of an exception
-            DB::rollBack();
-            throw $e;
-        }
+        });
     }
 
     /**
@@ -130,25 +134,24 @@ class BaseService implements IBaseService
      */
     public function createMany(array $data): array
     {
-        $storedData = [];
-        if (! empty($data)) {
+        if (empty($data)) {
+            return [];
+        }
+
+        return DB::transaction(function () use ($data) {
+            $storedData = [];
             foreach ($data as $key => $item) {
-                // Begin a database transaction
-                DB::beginTransaction();
                 try {
-                    $data = $this->model->newInstance($item);
-                    $data->save();
-                    DB::commit();
-                    $storedData[] = $data->refresh();
+                    $model = $this->model->newInstance($item);
+                    $model->save();
+                    $storedData[] = $model->refresh();
                 } catch (\Throwable $th) {
-                    // Rollback the transaction in case of an exception
-                    DB::rollBack();
                     Log::error($th->getMessage());
                 }
             }
-        }
 
-        return $storedData;
+            return $storedData;
+        });
     }
 
     /**
@@ -162,7 +165,7 @@ class BaseService implements IBaseService
         $query = $this->model->newQuery();
         $data = $query->find($idOrSlug);
 
-        if (! $data && $this->model->getConnection()->getSchemaBuilder()->hasColumn($this->model->getTable(), 'slug')) {
+        if (! $data && ! is_numeric($idOrSlug) && in_array('slug', $this->getTableColumns())) {
             $data = $query->where('slug', $idOrSlug)->first();
         }
 
@@ -194,7 +197,7 @@ class BaseService implements IBaseService
     ): Collection|LengthAwarePaginator|Builder {
         // dd($this->model);
         // Get column names of the model's table
-        $columns = $this->model->getConnection()->getSchemaBuilder()->getColumnListing($this->model->getTable());
+        $columns = $this->getTableColumns();
         $query = $this->model->newQuery();
         // dd($any, $indexes, $limit, $orderBy, $comparator, $relation);
 
@@ -315,16 +318,14 @@ class BaseService implements IBaseService
      */
     public function update(array $updateData, $idOrSlug): ?Model
     {
-        DB::beginTransaction();
-
-        try {
+        return DB::transaction(function () use ($updateData, $idOrSlug) {
             $query = $this->model->newQuery();
             $modelName = get_class($this->model);
 
             // Find the model by ID or slug
             $model = $query->find($idOrSlug);
 
-            if (! $model && $this->model->getConnection()->getSchemaBuilder()->hasColumn($this->model->getTable(), 'slug')) {
+            if (! $model && ! is_numeric($idOrSlug) && in_array('slug', $this->getTableColumns())) {
                 $model = $query->where('slug', $idOrSlug)->first();
             }
 
@@ -337,20 +338,11 @@ class BaseService implements IBaseService
 
             // Save the updated model
             if ($model->save()) {
-                DB::commit();
-
                 return $model;
             }
 
-            // Rollback the transaction if saving fails
-            DB::rollBack();
             throw new \Exception(__('exceptions.failed_to_update', ['model' => $modelName]));
-        } catch (\Exception $e) {
-            // Rollback the transaction in case of an exception
-            DB::rollBack();
-            Log::error($e->getMessage());
-            throw $e;
-        }
+        });
     }
 
     /**
@@ -362,15 +354,12 @@ class BaseService implements IBaseService
      */
     public function delete($idOrSlug): void
     {
-        // Begin a database transaction
-        DB::beginTransaction();
-
-        try {
+        DB::transaction(function () use ($idOrSlug) {
             $query = $this->model->newQuery();
             $model = $query->find($idOrSlug);
             $modelName = get_class($this->model);
 
-            if (! $model && $this->model->getConnection()->getSchemaBuilder()->hasColumn($this->model->getTable(), 'slug')) {
+            if (! $model && ! is_numeric($idOrSlug) && in_array('slug', $this->getTableColumns())) {
                 $model = $query->where('slug', $idOrSlug)->first();
             }
 
@@ -382,13 +371,7 @@ class BaseService implements IBaseService
             if (! $model->delete()) {
                 throw new \Exception(__('exceptions.failed_to_delete', ['model' => $modelName]));
             }
-
-            DB::commit();
-        } catch (\Throwable $e) {
-            // Rollback the transaction in case of an exception
-            DB::rollBack();
-            throw $e;
-        }
+        });
     }
 
     /**
@@ -401,29 +384,15 @@ class BaseService implements IBaseService
      */
     public function deleteMany(array $ids): ?int
     {
-        DB::beginTransaction();
-        try {
-            $deletedCount = 0;
-            $query = $this->model->newQuery()->whereIn('id', $ids);
-            $existing = $query->count();
+        return DB::transaction(function () use ($ids) {
+            $existing = $this->model->newQuery()->whereIn('id', $ids)->count();
             if ($existing === 0) {
                 $targetId = implode(', ', $ids);
                 throw new \Exception(__('exceptions.model_with_ids_not_found', ['ids' => $targetId]));
             }
-            $query->chunkById(100, function ($models) use (&$deletedCount) {
-                foreach ($models as $model) {
-                    $model->delete(); // call SoftDeletes + event
-                    $deletedCount++;
-                }
-            });
-            DB::commit();
 
-            return $deletedCount;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error("Failed to delete multiple records: {$e->getMessage()}");
-            throw new \Exception(__('exceptions.failed_to_delete_multiple'));
-        }
+            return $this->model->destroy($ids);
+        });
     }
 
     /**
