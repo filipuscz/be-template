@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Setting;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -27,17 +28,33 @@ class RoleSeeder extends Seeder
             'create examples',
             'update examples',
             'delete examples',
+            'view settings',
+            'update settings',
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::updateOrCreate(['name' => $permission]);
+        }
+
+        // Seed initial SMTP settings
+        $settings = [
+            'smtp_host' => '127.0.0.1',
+            'smtp_port' => '2525',
+            'smtp_username' => '',
+            'smtp_password' => '',
+            'smtp_encryption' => 'tls',
+            'mail_from_address' => 'hello@example.com',
+            'mail_from_name' => 'Laravel',
+        ];
+        foreach ($settings as $key => $value) {
+            Setting::updateOrCreate(['key' => $key], ['value' => $value]);
         }
 
         // Standard international roles
-        $adminRole = Role::create(['name' => 'admin']);
+        $adminRole = Role::updateOrCreate(['name' => 'admin']);
         $adminRole->givePermissionTo(Permission::all());
 
-        $userRole = Role::create(['name' => 'user']);
+        $userRole = Role::updateOrCreate(['name' => 'user']);
         $userRole->givePermissionTo([
             'view examples',
         ]);

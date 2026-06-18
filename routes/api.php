@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\ExampleController;
 use App\Http\Controllers\Api\v1\PermissionController;
 use App\Http\Controllers\Api\v1\RoleController;
+use App\Http\Controllers\Api\v1\SettingController;
 use App\Http\Controllers\Api\v1\UserController;
 use App\Http\Middleware\CheckApiToken;
 use Illuminate\Http\Request;
@@ -18,6 +19,15 @@ Route::prefix('v1')
     ->name('api.v1.')
     ->middleware(CheckApiToken::class)
     ->group(function () {
+        Route::name('setting.')
+            ->prefix('setting')
+            ->middleware('auth:api')
+            ->controller(SettingController::class)
+            ->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::put('/bulk_action/update', 'bulkUpdate')->name('bulk_action.update');
+            });
+
         Route::name('user.')
             ->prefix('user')
             ->middleware('auth:api')

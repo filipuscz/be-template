@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -58,6 +59,9 @@ class UserService extends BaseService
                 }
 
                 $user->load(['roles', 'detail']);
+
+                // Clear the cache for this user since we just updated them
+                Cache::forget("user_profile_{$user->id}");
             }
 
             return $user;
@@ -66,11 +70,20 @@ class UserService extends BaseService
 
     public function findById($idOrSlug): ?Model
     {
-        $user = parent::findById($idOrSlug);
-        if ($user) {
-            $user->load(['roles', 'detail']);
-        }
+        // Remember the user in the database cache for 60 minutes
+        return Cache::remember("user_profile_{$idOrSlug}", 3600, function () use ($idOrSlug) {
+            $user = parent::findById($idOrSlug);
+            if ($user) {
+                $user->load(['roles', 'detail']);
+            }
 
-        return $user;
+            return $user;
+        });
+    }
+
+    public function delete($idOrSlug): void
+    {
+        parent::delete($idOrSlug);
+        Cache::forget("user_profile_{$idOrSlug}");
     }
 }

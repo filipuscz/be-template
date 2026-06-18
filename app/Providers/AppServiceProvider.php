@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\SettingService;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\SecurityRequirement;
@@ -28,14 +29,48 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Passport::enablePasswordGrant();
+
+        try {
+            $settingService = app(SettingService::class);
+            $settings = $settingService->allSettings();
+
+            // Inject SMTP Settings Dynamically
+            if (! empty($settings['smtp_host'])) {
+                config(['mail.default' => 'smtp']);
+                config(['mail.mailers.smtp.host' => $settings['smtp_host']]);
+            }
+            if (isset($settings['smtp_port'])) {
+                config(['mail.mailers.smtp.port' => $settings['smtp_port']]);
+            }
+            if (isset($settings['smtp_username'])) {
+                config(['mail.mailers.smtp.username' => $settings['smtp_username']]);
+            }
+            if (isset($settings['smtp_password'])) {
+                config(['mail.mailers.smtp.password' => $settings['smtp_password']]);
+            }
+            if (isset($settings['smtp_encryption'])) {
+                config(['mail.mailers.smtp.encryption' => $settings['smtp_encryption']]);
+            }
+            if (isset($settings['mail_from_address'])) {
+                config(['mail.from.address' => $settings['mail_from_address']]);
+            }
+            if (isset($settings['mail_from_name'])) {
+                config(['mail.from.name' => $settings['mail_from_name']]);
+            }
+
+        } catch (\Throwable $e) {
+            // Database might not exist yet during initial setup/migrations. Ignore.
+        }
+
         Scramble::configure()
-        ->withDocumentTransformers(function (OpenApi $openApi) {
-            $openApi->info->description = 'API for the best Todo app!';
-            $openApi->components->securitySchemes['bearer'] = SecurityScheme::http('bearer');
-            $openApi->security[] = new SecurityRequirement([
-                'bearer' => [],
-            ]);
-        });
+            ->withDocumentTransformers(function (OpenApi $openApi) {
+                $openApi->info->description = 'API for the best Todo app!';
+                $openApi->components->securitySchemes['bearer'] = SecurityScheme::http('bearer');
+                $openApi->security[] = new SecurityRequirement([
+                    'bearer' => [],
+                ]);
+            });
         Scramble::registerApi('api/v1', [
             'api_path' => 'api/v1',
         ]);
