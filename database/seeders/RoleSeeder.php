@@ -38,6 +38,7 @@ class RoleSeeder extends Seeder
 
         // Seed initial SMTP settings
         $settings = [
+            'send_welcome_email' => '1',
             'smtp_host' => '127.0.0.1',
             'smtp_port' => '2525',
             'smtp_username' => '',

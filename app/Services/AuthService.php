@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Mail\UserRegisteredEmail;
 use App\Models\User;
+use App\Notifications\WelcomeNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class AuthService
 {
@@ -41,6 +44,15 @@ class AuthService
 
             $deviceName = $userAgent ?: 'device_'.$user->id.'_'.now()->timestamp;
             $token = $user->createToken($deviceName)->accessToken;
+
+            // Send database greeting notification
+            $user->notify(new WelcomeNotification);
+
+            // Check if send_welcome_email setting is enabled
+            $isEmailEnabled = app(SettingService::class)->get('send_welcome_email', '0');
+            if ($isEmailEnabled === '1' || $isEmailEnabled === 'true') {
+                Mail::to($user->email)->send(new UserRegisteredEmail($user));
+            }
 
             return [
                 'user' => $user,

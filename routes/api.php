@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\ExampleController;
+use App\Http\Controllers\Api\v1\NotificationController;
 use App\Http\Controllers\Api\v1\PermissionController;
 use App\Http\Controllers\Api\v1\RoleController;
 use App\Http\Controllers\Api\v1\SettingController;
@@ -26,6 +27,17 @@ Route::prefix('v1')
             ->group(function () {
                 Route::get('/', 'index')->name('index');
                 Route::put('/bulk_action/update', 'bulkUpdate')->name('bulk_action.update');
+            });
+
+        Route::name('notification.')
+            ->prefix('notification')
+            ->middleware('auth:api')
+            ->controller(NotificationController::class)
+            ->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::put('/mark-all-as-read', 'markAllAsRead')->name('mark_all_as_read');
+                Route::put('/{id}/mark-as-read', 'markAsRead')->name('mark_as_read');
+                Route::delete('/{id}', 'destroy')->name('destroy');
             });
 
         Route::name('user.')
