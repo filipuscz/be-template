@@ -69,9 +69,10 @@ class AuthService
     {
         $user->last_login_at = now();
         $user->save();
-        /** 
-         * @var Token|null $token 
-         * @phpstan-ignore varTag.nativeType 
+        /**
+         * @var Token|null $token
+         *
+         * @phpstan-ignore varTag.nativeType
          */
         $token = $user->token();
         $token?->revoke();

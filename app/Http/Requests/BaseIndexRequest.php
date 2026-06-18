@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\QueryAcceptedComparatorEnum;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -19,7 +20,7 @@ class BaseIndexRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -28,7 +29,7 @@ class BaseIndexRequest extends FormRequest
             'orderByColumns' => 'string',
             'any' => 'in:true,false,1,0',
             'limit' => 'integer',
-            'comparator' => Rule::in(array_map(fn($e) => $e->value, QueryAcceptedComparatorEnum::cases())), // add QueryAcceptedComparatorEnum
+            'comparator' => Rule::in(array_map(fn ($e) => $e->value, QueryAcceptedComparatorEnum::cases())), // add QueryAcceptedComparatorEnum
             'page' => 'integer',
             'filters' => ['nullable', 'array'],
             'filters.*' => ['nullable'],        // can be string or array

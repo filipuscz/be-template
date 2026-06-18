@@ -11,6 +11,7 @@ use App\Http\Requests\User\ShowRequest;
 use App\Http\Requests\User\StoreUpdateRequest;
 use App\Http\Resources\UserResource;
 use App\Services\UserService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -32,11 +33,11 @@ class UserController extends BaseApiController
         );
 
         if ($results instanceof LengthAwarePaginator) {
-            /** @var \Illuminate\Database\Eloquent\Collection $collection */
+            /** @var Collection $collection */
             $collection = $results->getCollection();
             $collection->load(['roles', 'detail']);
         } else {
-            /** @var \Illuminate\Database\Eloquent\Collection $results */
+            /** @var Collection $results */
             $results->load(['roles', 'detail']);
         }
 

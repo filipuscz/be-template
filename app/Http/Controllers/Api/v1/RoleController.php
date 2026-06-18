@@ -9,6 +9,7 @@ use App\Http\Requests\BaseIndexRequest;
 use App\Http\Requests\Role\StoreUpdateRequest;
 use App\Http\Resources\RoleResource;
 use App\Services\RoleService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -30,11 +31,11 @@ class RoleController extends BaseApiController
         );
 
         if ($results instanceof LengthAwarePaginator) {
-            /** @var \Illuminate\Database\Eloquent\Collection $collection */
+            /** @var Collection $collection */
             $collection = $results->getCollection();
             $collection->load('permissions');
         } else {
-            /** @var \Illuminate\Database\Eloquent\Collection $results */
+            /** @var Collection $results */
             $results->load('permissions');
         }
 

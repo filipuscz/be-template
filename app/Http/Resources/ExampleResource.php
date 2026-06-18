@@ -2,11 +2,12 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Example;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\Example
+ * @mixin Example
  */
 class ExampleResource extends JsonResource
 {

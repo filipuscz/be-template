@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Post;
 use Illuminate\Database\Seeder;
 
 class PostSeeder extends Seeder
@@ -26,8 +26,8 @@ class PostSeeder extends Seeder
         //     $table->softDeletes();
         //     $table->timestamps();
 
-        \App\Models\Post::factory()
-        ->count(2)
-        ->create();
+        Post::factory()
+            ->count(2)
+            ->create();
     }
 }

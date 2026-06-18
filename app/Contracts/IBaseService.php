@@ -72,7 +72,7 @@ interface IBaseService
     /**
      * Update a records
      *
-     * @param array $data attributes data.
+     * @param  array  $data  attributes data.
      * @param  $idOrSlug  id or slug of instance to delete.
      * @return Model|null updated instance
      */

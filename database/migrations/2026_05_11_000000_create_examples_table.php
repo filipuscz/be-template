@@ -32,7 +32,7 @@ return new class extends Migration
             $table->smallInteger('small_integer_column');
             $table->tinyInteger('tiny_integer_column');
             $table->unsignedInteger('unsigned_integer_column');
-            
+
             $table->decimal('decimal_column', 8, 2);
             $table->double('double_column');
             $table->float('float_column');

@@ -21,10 +21,11 @@ class ApiTokenHelper
         $signature = hash_hmac('sha256', $encrypted, env('API_SECRET_KEY'));
 
         // Final token
-        return base64_encode($encrypted . '.' . $signature);
+        return base64_encode($encrypted.'.'.$signature);
     }
 
-    public static function validation($header) {
+    public static function validation($header)
+    {
         /** @phpstan-ignore larastan.noEnvCallsOutsideOfConfig */
         $secret = env('API_SECRET_KEY');
         /** @phpstan-ignore larastan.noEnvCallsOutsideOfConfig */
@@ -35,13 +36,14 @@ class ApiTokenHelper
 
         // Validate signature
         $expectedSignature = hash_hmac('sha256', $encrypted, $secret);
-        throw_if(!hash_equals($expectedSignature, $signature), new \Exception('Invalid API token signature.'));
+        throw_if(! hash_equals($expectedSignature, $signature), new \Exception('Invalid API token signature.'));
         // Decrypt payload
         $decrypted = Crypt::decryptString($encrypted);
         [$timestamp, $random] = explode('|', $decrypted);
         $tokenDate = Carbon::createFromFormat('YmdHis', $timestamp);
         $expiryTime = $tokenDate->clone()->addHours($expiryHours);
         throw_if(now()->greaterThan($expiryTime), new \Exception('API token has expired.'));
+
         return true;
     }
 }
