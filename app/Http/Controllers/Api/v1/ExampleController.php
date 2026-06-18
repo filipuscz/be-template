@@ -7,8 +7,9 @@ use App\Http\Requests\BaseBulkDestroyRequest;
 use App\Http\Requests\BaseBulkUpdateRequest;
 use App\Http\Requests\BaseIndexRequest;
 use App\Http\Requests\Example\StoreUpdateRequest;
-use App\Http\Resources\BaseResource;
+use App\Http\Resources\ExampleResource;
 use App\Services\ExampleService;
+use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ExampleController extends BaseApiController
@@ -21,7 +22,7 @@ class ExampleController extends BaseApiController
      * @response array{success: string, message: string, status: string, code: integer, data: collection,
      * meta: array{}, links: array{}}
      */
-    public function index(BaseIndexRequest $request)
+    public function index(BaseIndexRequest $request): JsonResponse
     {
         // getPrintableColumns
         $indexes = $this->prepareIndexes($request->all());
@@ -33,10 +34,10 @@ class ExampleController extends BaseApiController
             $indexes['qcomparator'],
             $indexes['filters']
         );
-        $formattedResponse = $this->paginateResponse($results, BaseResource::class);
+        $formattedResponse = $this->paginateResponse($results, ExampleResource::class);
 
         return $this->setStatusMsg($formattedResponse['meta']['total'] ? 'success' : 'failed')
-            ->respondOK($formattedResponse, $formattedResponse['meta']['total'] ? 'Data Found' : 'Data Not Found');
+            ->respondOK($formattedResponse, $formattedResponse['meta']['total'] ? __('messages.data_found') : __('messages.data_not_found'));
     }
 
     /**
@@ -52,12 +53,12 @@ class ExampleController extends BaseApiController
      *
      * @response array{success: string, message: string, status: string, code: integer, data: array{}}
      */
-    public function store(StoreUpdateRequest $request)
+    public function store(StoreUpdateRequest $request): JsonResponse
     {
         $data = $this->exampleService->create($request->all());
 
         return $this->respondOK([
-            'data' => new BaseResource($data),
+            'data' => new ExampleResource($data),
         ]);
     }
 
@@ -66,13 +67,13 @@ class ExampleController extends BaseApiController
      *
      * @response array{success: string, message: string, status: string, code: integer, data: array{}}
      */
-    public function show(string $idOrSlug)
+    public function show(string $idOrSlug): JsonResponse
     {
         $data = $this->exampleService->findById($idOrSlug);
-        throw_if((empty($data)), new NotFoundHttpException('Data Not Found'));
+        throw_if((empty($data)), new NotFoundHttpException(__('messages.data_not_found')));
 
         return $this->setStatusMsg('success')->respondOK([
-            'data' => new BaseResource($data),
+            'data' => new ExampleResource($data),
         ]);
     }
 
@@ -86,12 +87,12 @@ class ExampleController extends BaseApiController
      *
      * @response array{success: string, message: string, status: string, code: integer, data: array{}}
      */
-    public function update(StoreUpdateRequest $request, string $idOrSlug)
+    public function update(StoreUpdateRequest $request, string $idOrSlug): JsonResponse
     {
         $data = $this->exampleService->update($request->all(), $idOrSlug);
 
         return $this->respondOK([
-            'data' => new BaseResource($data),
+            'data' => new ExampleResource($data),
         ]);
     }
 
@@ -100,20 +101,20 @@ class ExampleController extends BaseApiController
      *
      * @response array{success: string, message: string, status: string, code: integer}
      */
-    public function bulkUpdate(BaseBulkUpdateRequest $request)
+    public function bulkUpdate(BaseBulkUpdateRequest $request): JsonResponse
     {
         $ids = $request->input('ids', []);
         // except ids
         $updateData = $request->except('ids');
         if (empty($ids) || ! is_array($ids)) {
-            throw new NotFoundHttpException('No IDs provided for update');
+            throw new NotFoundHttpException(__('exceptions.no_ids_for_update'));
         }
         if (empty($updateData) || ! is_array($updateData)) {
-            throw new NotFoundHttpException('No data provided for update');
+            throw new NotFoundHttpException(__('exceptions.no_data_for_update'));
         }
         $count = $this->exampleService->updateMany($ids, $updateData);
 
-        return $this->respondOK(null, "$count resources have been updated", true);
+        return $this->respondOK(null, __('messages.resources_updated', ['count' => $count]), true);
     }
 
     /**
@@ -121,14 +122,14 @@ class ExampleController extends BaseApiController
      *
      * @response array{success: string, message: string, status: string, code: integer}
      */
-    public function destroy(string $idOrSlug)
+    public function destroy(string $idOrSlug): JsonResponse
     {
         $data = $this->exampleService->findById($idOrSlug);
-        throw_if(! $data, new NotFoundHttpException('Data Not Found'));
+        throw_if(! $data, new NotFoundHttpException(__('messages.data_not_found')));
 
         $this->exampleService->delete($idOrSlug);
 
-        return $this->respondOK(null, 'The resource has been deleted', true);
+        return $this->respondOK(null, __('messages.deleted'), true);
     }
 
     /**
@@ -136,14 +137,14 @@ class ExampleController extends BaseApiController
      *
      * @response array{success: string, message: string, status: string, code: integer}
      */
-    public function bulkDestroy(BaseBulkDestroyRequest $request)
+    public function bulkDestroy(BaseBulkDestroyRequest $request): JsonResponse
     {
         $ids = $request->input('ids', []);
         if (empty($ids) || ! is_array($ids)) {
-            throw new NotFoundHttpException('No IDs provided for deletion');
+            throw new NotFoundHttpException(__('exceptions.no_ids_for_deletion'));
         }
         $count = $this->exampleService->deleteMany($ids);
 
-        return $this->respondOK(null, "$count resources have been deleted", true);
+        return $this->respondOK(null, __('messages.resources_deleted', ['count' => $count]), true);
     }
 }

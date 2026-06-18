@@ -3,30 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Enums\QueryAcceptedComparatorEnum;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Response;
 
 class BaseApiController extends Controller
 {
-    protected $statusCode = 200;
-    protected $statusMsg = "success";
-    protected $recordLimit = 25;
+    protected int $statusCode = 200;
 
-    public function __construct()
-    {
-    }
+    protected string $statusMsg = 'success';
+
+    protected int $recordLimit = 25;
+
+    public function __construct() {}
 
     /**
      * Respond with a JSON response.
      *
-     * @param mixed $data The data to be returned.
-     * @param int|null $status The HTTP status code.
-     * @param array $headers Additional headers to be sent with the response.
-     * @return JsonResponse
+     * @param  mixed  $data  The data to be returned.
+     * @param  int|null  $status  The HTTP status code.
+     * @param  array  $headers  Additional headers to be sent with the response.
      */
     public function respond($data, $status = null, $headers = []): JsonResponse
     {
@@ -36,12 +34,11 @@ class BaseApiController extends Controller
     /**
      * Respond with a JSON response with a message.
      *
-     * @param string $message The message to be returned.
-     * @param bool $success Indicates if the response is successful.
-     * @param array $extras Additional data to be included in the response.
-     * @return JsonResponse
+     * @param  string  $message  The message to be returned.
+     * @param  bool  $success  Indicates if the response is successful.
+     * @param  array  $extras  Additional data to be included in the response.
      */
-    public function respondDetail($message, $success = true, $extras = []): JsonResponse
+    public function respondDetail(string $message, bool $success = true, array $extras = []): JsonResponse
     {
         $responseArray = [
             'success' => $success,
@@ -50,110 +47,112 @@ class BaseApiController extends Controller
             'code' => $this->statusCode,
         ];
 
-        if (!empty($extras)) {
+        if (! empty($extras)) {
             $responseArray = array_merge($responseArray, $extras);
         }
 
         return $this->respond($responseArray);
     }
 
-    public function setStatusCode($statusCode): BaseApiController
+    public function setStatusCode(int $statusCode): BaseApiController
     {
         $this->statusCode = $statusCode;
+
         return $this;
     }
 
-    public function setStatusMsg($message): BaseApiController
+    public function setStatusMsg(string $message): BaseApiController
     {
         $this->statusMsg = $message;
+
         return $this;
     }
 
-    public function generateResponse($statusCode, $extras = null, $message = '', $success = true): JsonResponse
+    public function generateResponse(int $statusCode, ?array $extras = null, ?string $message = '', bool $success = true): JsonResponse
     {
         return $this->setStatusCode($statusCode)->respondDetail($message, $success, $extras);
     }
 
-    public function respondOK($extras = null, $message = 'Success!', $success = true): JsonResponse
+    public function respondOK(?array $extras = null, ?string $message = null, bool $success = true): JsonResponse
     {
-        return $this->generateResponse(200, $extras, $message, $success);
+        return $this->generateResponse(200, $extras, $message ?? __('messages.success'), $success);
     }
 
-    public function respondCreated($extras = null, $message = 'The resource has been created', $success = true): JsonResponse
+    public function respondCreated(?array $extras = null, ?string $message = null, bool $success = true): JsonResponse
     {
-        return $this->generateResponse(201, $extras, $message, $success);
+        return $this->generateResponse(201, $extras, $message ?? __('messages.created'), $success);
     }
 
-    public function respondDeleted($extras = null, $message = 'The resource has been deleted', $success = false): JsonResponse
+    public function respondDeleted(?array $extras = null, ?string $message = null, bool $success = false): JsonResponse
     {
-        return $this->generateResponse(204, $extras, $message, $success);
+        return $this->generateResponse(204, $extras, $message ?? __('messages.deleted'), $success);
     }
 
-    public function respondRedirect(string $url, $status = 302, array $headers = []): JsonResponse
+    public function respondRedirect(string $url, int $status = 302, array $headers = []): JsonResponse
     {
         return $this->generateResponse($status, ['redirect_uri' => $url], null, true, $headers);
     }
 
-    public function respondBadRequest($extras = null, $message = 'Bad request!', $success = false): JsonResponse
+    public function respondBadRequest(?array $extras = null, ?string $message = null, bool $success = false): JsonResponse
     {
-        return $this->setStatusMsg("failed")->generateResponse(400, $extras, $message, $success);
+        return $this->setStatusMsg('failed')->generateResponse(400, $extras, $message ?? __('messages.bad_request'), $success);
     }
 
-    public function respondUnauthorized($extras = null, $message = 'Unauthorized!', $success = false): JsonResponse
+    public function respondUnauthorized(?array $extras = null, ?string $message = null, bool $success = false): JsonResponse
     {
-        return $this->setStatusMsg("failed")->generateResponse(401, $extras, $message, $success);
+        return $this->setStatusMsg('failed')->generateResponse(401, $extras, $message ?? __('messages.unauthorized'), $success);
     }
 
-    public function respondForbidden($extras = null, $message = 'Forbidden!', $success = false): JsonResponse
+    public function respondForbidden(?array $extras = null, ?string $message = null, bool $success = false): JsonResponse
     {
-        return $this->setStatusMsg("failed")->generateResponse(403, $extras, $message, $success);
+        return $this->setStatusMsg('failed')->generateResponse(403, $extras, $message ?? __('messages.forbidden'), $success);
     }
 
-    public function respondNotFound($extras = null, $message = 'Not found!', $success = true): JsonResponse
+    public function respondNotFound(?array $extras = null, ?string $message = null, bool $success = true): JsonResponse
     {
-        return $this->setStatusMsg("failed")->generateResponse(404, $extras, $message, $success);
+        return $this->setStatusMsg('failed')->generateResponse(404, $extras, $message ?? __('messages.not_found'), $success);
     }
 
-    public function respondConflict($extras = null, $message = 'Conflict!', $success = false): JsonResponse
+    public function respondConflict(?array $extras = null, ?string $message = null, bool $success = false): JsonResponse
     {
-        return $this->generateResponse(409, $extras, $message, $success);
+        return $this->generateResponse(409, $extras, $message ?? __('messages.conflict'), $success);
     }
 
-    public function respondInternalError($extras = null, $message = 'Internal error!', $success = false): JsonResponse
+    public function respondInternalError(?array $extras = null, ?string $message = null, bool $success = false): JsonResponse
     {
-        return $this->setStatusMsg("failed")->generateResponse(500, $extras, $message, $success);
+        return $this->setStatusMsg('failed')->generateResponse(500, $extras, $message ?? __('messages.internal_error'), $success);
     }
 
-    public function respondUnprocessableEntity($extras = null, $message = 'Unprocessable entity!', $success = false): JsonResponse
+    public function respondUnprocessableEntity(?array $extras = null, ?string $message = null, bool $success = false): JsonResponse
     {
-        return $this->generateResponse(422, $extras, $message, $success);
+        return $this->generateResponse(422, $extras, $message ?? __('messages.unprocessable_entity'), $success);
     }
 
-    public function respondNotAcceptable($extras = null, $message = 'Not acceptable!', $success = false): JsonResponse
+    public function respondNotAcceptable(?array $extras = null, ?string $message = null, bool $success = false): JsonResponse
     {
-        return $this->generateResponse(406, $extras, $message, $success);
+        return $this->generateResponse(406, $extras, $message ?? __('messages.not_acceptable'), $success);
     }
 
-    public function respondTooManyRequests($extras = null, $message = 'Too many requests!', $success = false): JsonResponse
+    public function respondTooManyRequests(?array $extras = null, ?string $message = null, bool $success = false): JsonResponse
     {
-        return $this->generateResponse(429, $extras, $message, $success);
+        return $this->generateResponse(429, $extras, $message ?? __('messages.too_many_requests'), $success);
     }
 
-    public function respondNotImplemented($extras = null, $message = 'Not implemented!', $success = false): JsonResponse
+    public function respondNotImplemented(?array $extras = null, ?string $message = null, bool $success = false): JsonResponse
     {
-        return $this->generateResponse(501, $extras, $message, $success);
+        return $this->generateResponse(501, $extras, $message ?? __('messages.not_implemented'), $success);
     }
 
-    public function respondServiceUnavailable($extras = null, $message = 'Service unavailable!', $success = false): JsonResponse
+    public function respondServiceUnavailable(?array $extras = null, ?string $message = null, bool $success = false): JsonResponse
     {
-        return $this->generateResponse(503, $extras, $message, $success);
+        return $this->generateResponse(503, $extras, $message ?? __('messages.service_unavailable'), $success);
     }
 
     /**
      * Paginate the response data.
      *
-     * @param LengthAwarePaginator|Collection $paginatedData The paginated data.
-     * @param string|null $resource The resource class name for transformation.
+     * @param  LengthAwarePaginator|Collection  $paginatedData  The paginated data.
+     * @param  string|null  $resource  The resource class name for transformation.
      * @return array The paginated response data.
      */
     public function paginateResponse(LengthAwarePaginator|Collection $paginatedData, $resource = null): array
@@ -164,6 +163,7 @@ class BaseApiController extends Controller
             } else {
                 $items = $paginatedData->items();
             }
+
             return [
                 'data' => $items,
                 'meta' => [
@@ -171,7 +171,7 @@ class BaseApiController extends Controller
                     'per_page' => $paginatedData->perPage(),
                     'current_page' => $paginatedData->currentPage(),
                     'last_page' => $paginatedData->lastPage(),
-                    'total_page' => ceil($paginatedData->total() / $paginatedData->perPage())
+                    'total_page' => ceil($paginatedData->total() / $paginatedData->perPage()),
                 ],
                 'links' => [
                     'first' => $paginatedData->url(1),
@@ -193,7 +193,7 @@ class BaseApiController extends Controller
                     'total' => $paginatedData->count(),
                     'limit' => $paginatedData->count(),
                     'last_page' => 1,
-                    'total_page' => 1
+                    'total_page' => 1,
                 ],
                 'links' => [
                     'first' => null,
@@ -207,7 +207,7 @@ class BaseApiController extends Controller
         throw new \InvalidArgumentException('Invalid type for $paginatedData');
     }
 
-    public function formatErrors($errors): array
+    public function formatErrors(array $errors): array
     {
         $bag = [];
 
@@ -225,14 +225,14 @@ class BaseApiController extends Controller
     /**
      * Prepare the $request for findByIndexes method.
      *
-     * @param Request $request The request object.
+     * @param  array  $indexes  The indexes array.
      * @return array The prepared indexes.
      */
     public function prepareIndexes(array $indexes): array
     {
         $filters = $indexes['filters'] ?? [];
         $orderByColumns = $indexes['orderByColumns'] ?? [];
-        $orderBy = $orderByColumns ? explode(",", $orderByColumns) : [];
+        $orderBy = $orderByColumns ? explode(',', $orderByColumns) : [];
         $any = $indexes['any'] ?? false;
         $any = filter_var($any, FILTER_VALIDATE_BOOLEAN);
         $limit = $indexes['limit'] ?? 10;
@@ -250,7 +250,7 @@ class BaseApiController extends Controller
             'limit' => $limit,
             'orderBy' => $orderBy,
             'qcomparator' => $qcomparator,
-            'filters' => $filters
+            'filters' => $filters,
         ];
     }
 }

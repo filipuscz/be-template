@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\IBaseService;
 use App\Enums\QueryAcceptedComparatorEnum;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -47,9 +48,9 @@ class BaseService implements IBaseService
     }
 
     /**
-     * Get the model associated with this service.
+     * Get the module name associated with this service.
      *
-     * @return Model The model associated with this service.
+     * @return string The module name.
      */
     public function getModuleName(): string
     {
@@ -57,9 +58,9 @@ class BaseService implements IBaseService
     }
 
     /**
-     * Set the columns that can be exported.
+     * Get the columns that can be exported.
      *
-     * @param  array  $columns  The columns that can be exported.
+     * @return array The columns that can be exported.
      */
     public function getPrintableColumns(): array
     {
@@ -93,7 +94,7 @@ class BaseService implements IBaseService
      *
      * @throws \Exception If unable to save the model.
      */
-    public function create(array $attr)
+    public function create(array $attr): Model
     {
         // Begin a database transaction
         DB::beginTransaction();
@@ -113,7 +114,7 @@ class BaseService implements IBaseService
 
             // Rollback the transaction if saving fails
             DB::rollBack();
-            throw new \Exception("Failed to save {$modelName} to database");
+            throw new \Exception(__('exceptions.failed_to_save', ['model' => $modelName]));
         } catch (\Exception $e) {
             // Rollback the transaction in case of an exception
             DB::rollBack();
@@ -190,7 +191,7 @@ class BaseService implements IBaseService
         ?array $fields = null,
         ?array $relation = null,
         ?array $defaultOrderBy = null,
-    ) {
+    ): Collection|LengthAwarePaginator|Builder {
         // dd($this->model);
         // Get column names of the model's table
         $columns = $this->model->getConnection()->getSchemaBuilder()->getColumnListing($this->model->getTable());
@@ -328,7 +329,7 @@ class BaseService implements IBaseService
             }
 
             if (! $model) {
-                throw new \Exception('Model not found');
+                throw new \Exception(__('exceptions.model_not_found'));
             }
 
             // Update the model attributes with the provided data
@@ -343,7 +344,7 @@ class BaseService implements IBaseService
 
             // Rollback the transaction if saving fails
             DB::rollBack();
-            throw new \Exception("Failed to update {$modelName}");
+            throw new \Exception(__('exceptions.failed_to_update', ['model' => $modelName]));
         } catch (\Exception $e) {
             // Rollback the transaction in case of an exception
             DB::rollBack();
@@ -374,12 +375,12 @@ class BaseService implements IBaseService
             }
 
             if (! $model) {
-                throw new \Exception('Model not found');
+                throw new \Exception(__('exceptions.model_not_found'));
             }
 
             // Delete the model
             if (! $model->delete()) {
-                throw new \Exception("Failed to delete {$modelName}");
+                throw new \Exception(__('exceptions.failed_to_delete', ['model' => $modelName]));
             }
 
             DB::commit();
@@ -407,7 +408,7 @@ class BaseService implements IBaseService
             $existing = $query->count();
             if ($existing === 0) {
                 $targetId = implode(', ', $ids);
-                throw new \Exception("Model with IDs {$targetId} not found");
+                throw new \Exception(__('exceptions.model_with_ids_not_found', ['ids' => $targetId]));
             }
             $query->chunkById(100, function ($models) use (&$deletedCount) {
                 foreach ($models as $model) {
@@ -421,7 +422,7 @@ class BaseService implements IBaseService
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Failed to delete multiple records: {$e->getMessage()}");
-            throw new \Exception('Failed to delete multiple records');
+            throw new \Exception(__('exceptions.failed_to_delete_multiple'));
         }
     }
 
@@ -442,7 +443,7 @@ class BaseService implements IBaseService
             $missingIds = array_diff($ids, $existingIds);
 
             if (! empty($missingIds)) {
-                throw new \Exception('Model with IDs ['.implode(', ', $missingIds).'] not found');
+                throw new \Exception(__('exceptions.model_with_ids_not_found', ['ids' => implode(', ', $missingIds)]));
             }
 
             $updatedCount = 0;
@@ -456,7 +457,7 @@ class BaseService implements IBaseService
                         if ($model->save()) {
                             $updatedCount++;
                         } else {
-                            throw new \Exception('Failed to update model '.get_class($model)." with ID {$model->id}");
+                            throw new \Exception(__('exceptions.failed_to_update_model_with_id', ['model' => get_class($model), 'id' => $model->id]));
                         }
                     }
                 });
@@ -465,7 +466,7 @@ class BaseService implements IBaseService
         });
     }
 
-    public function firebaseNotification(array $deviceTokens, string $title, string $body, array $data = [], $imageUrl = null): void
+    public function firebaseNotification(array $deviceTokens, string $title, string $body, array $data = [], ?string $imageUrl = null): void
     {
         try {
             $messaging = app('firebase.messaging');
