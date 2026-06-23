@@ -7,6 +7,29 @@ Base URL: `http://localhost:8000/api/v1`
 
 ---
 
+## Global Query Parameters
+
+All list endpoints (`GET /user`, `GET /role`, `GET /notification`, etc.) driven by the `BaseService` support the following global parameters:
+
+- `limit`: The number of records to return per page (default: 10 or 15). Use `-1` to fetch all records (disables pagination).
+- `page`: The offset page number to retrieve.
+- `use_cursor`: Set to `true` to use highly-performant cursor pagination instead of standard offset pagination.
+- `cursor`: The encoded cursor string provided from the previous request's `next_cursor` to fetch the next batch.
+
+**Example: Requesting the first page with cursor pagination**
+```http
+GET /user?use_cursor=true&limit=15
+Authorization: Bearer <token>
+```
+
+**Example: Next Page Request (using the cursor from previous response)**
+```http
+GET /user?use_cursor=true&cursor=eyJpZCI6MTUsIl9wb2ludHNUb05leHRJdGVtcyI6dHJ1ZX0=&limit=15
+Authorization: Bearer <token>
+```
+
+---
+
 ## 1. Authentication & Registration
 When a user registers, if the `send_welcome_email` setting is `1` in the database, a welcome email will automatically be queued.
 
@@ -171,3 +194,15 @@ Content-Type: application/json
 GET /permission
 Authorization: Bearer <token>
 ```
+```
+
+---
+
+## 6. Localization (Translations API)
+Expose the backend Laravel localization files (e.g. `messages.php`, `validation.php`) to frontend SPA/Mobile applications.
+
+**Get Translations by Locale**
+```http
+GET /language/{locale}
+```
+*Note: This endpoint is accessible without an authentication token so the frontend can load translations before login.*

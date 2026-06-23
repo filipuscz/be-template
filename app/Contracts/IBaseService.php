@@ -6,6 +6,7 @@ use App\Enums\QueryAcceptedComparatorEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -48,7 +49,7 @@ interface IBaseService
      * @param  array|null  $relation  Optional relation to include in the query.
      * @param  array|null  $defaultOrderBy  Default order by columns.
      * @param  array|null  $fields  Columns to search in.
-     * @return Collection|LengthAwarePaginator|Builder data matching the criteria.
+     * @return Collection|LengthAwarePaginator|CursorPaginator|Builder data matching the criteria.
      */
     public function findByIndexes(
         array $indexes,
@@ -60,7 +61,7 @@ interface IBaseService
         ?array $fields = null,
         ?array $relation = null,
         ?array $defaultOrderBy = null,
-    ): Collection|LengthAwarePaginator|Builder;
+    ): Collection|LengthAwarePaginator|CursorPaginator|Builder;
 
     /**
      * Get all records

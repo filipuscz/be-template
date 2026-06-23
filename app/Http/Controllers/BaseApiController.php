@@ -6,6 +6,7 @@ use App\Enums\QueryAcceptedComparatorEnum;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Response;
 
@@ -155,7 +156,7 @@ class BaseApiController extends Controller
      * @param  string|null  $resource  The resource class name for transformation.
      * @return array The paginated response data.
      */
-    public function paginateResponse(LengthAwarePaginator|Collection $paginatedData, mixed $resource = null): array
+    public function paginateResponse(LengthAwarePaginator|CursorPaginator|Collection $paginatedData, mixed $resource = null): array
     {
         if ($paginatedData instanceof LengthAwarePaginator) {
             if (is_subclass_of($resource, JsonResource::class)) {
@@ -180,31 +181,53 @@ class BaseApiController extends Controller
                     'next' => $paginatedData->nextPageUrl(),
                 ],
             ];
-        } elseif ($paginatedData instanceof Collection) { // Case when the data is not paginated / limit is -1
+        }
+
+        if ($paginatedData instanceof CursorPaginator) {
             if (is_subclass_of($resource, JsonResource::class)) {
-                $items = $resource::collection($paginatedData->all());
+                $items = $resource::collection($paginatedData->items());
             } else {
-                $items = $paginatedData->all();
+                $items = $paginatedData->items();
             }
 
             return [
                 'data' => $items,
                 'meta' => [
-                    'total' => $paginatedData->count(),
-                    'limit' => $paginatedData->count(),
-                    'last_page' => 1,
-                    'total_page' => 1,
+                    'per_page' => $paginatedData->perPage(),
+                    'has_more_pages' => $paginatedData->hasMorePages(),
+                    'next_cursor' => $paginatedData->nextCursor()?->encode(),
+                    'prev_cursor' => $paginatedData->previousCursor()?->encode(),
                 ],
                 'links' => [
-                    'first' => null,
-                    'last' => null,
-                    'prev' => null,
-                    'next' => null,
+                    'first' => $paginatedData->url(null),
+                    'prev' => $paginatedData->previousPageUrl(),
+                    'next' => $paginatedData->nextPageUrl(),
                 ],
             ];
         }
 
-        return [];
+        // Case when the data is not paginated / limit is -1
+        if (is_subclass_of($resource, JsonResource::class)) {
+            $items = $resource::collection($paginatedData->all());
+        } else {
+            $items = $paginatedData->all();
+        }
+
+        return [
+            'data' => $items,
+            'meta' => [
+                'total' => $paginatedData->count(),
+                'limit' => $paginatedData->count(),
+                'last_page' => 1,
+                'total_page' => 1,
+            ],
+            'links' => [
+                'first' => null,
+                'last' => null,
+                'prev' => null,
+                'next' => null,
+            ],
+        ];
     }
 
     public function formatErrors(array $errors): array
@@ -244,6 +267,10 @@ class BaseApiController extends Controller
             unset($indexes['ignoreIds']);
         }
 
+        $useCursor = $indexes['use_cursor'] ?? false;
+        $useCursor = filter_var($useCursor, FILTER_VALIDATE_BOOLEAN);
+        $indexes['useCursor'] = $useCursor; // inject back into indexes array for base service
+
         return [
             'indexes' => $indexes,
             'any' => $any,
@@ -251,6 +278,7 @@ class BaseApiController extends Controller
             'orderBy' => $orderBy,
             'qcomparator' => $qcomparator,
             'filters' => $filters,
+            'useCursor' => $useCursor,
         ];
     }
 }

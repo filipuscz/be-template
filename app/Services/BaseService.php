@@ -7,6 +7,7 @@ use App\Enums\QueryAcceptedComparatorEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -182,7 +183,7 @@ class BaseService implements IBaseService
      * @param  QueryAcceptedComparatorEnum  $comparator  The comparison operator for each index.
      * @param  array|null  $relation  Optional related models to eager load.
      * @param  array|null  $fields  Optional columns to search for a specific value.
-     * @return Collection|LengthAwarePaginator The matching model instances.
+     * @return Collection|LengthAwarePaginator|CursorPaginator|Builder The matching model instances.
      */
     public function findByIndexes(
         array $indexes,
@@ -194,7 +195,7 @@ class BaseService implements IBaseService
         ?array $fields = null,
         ?array $relation = null,
         ?array $defaultOrderBy = null,
-    ): Collection|LengthAwarePaginator|Builder {
+    ): Collection|LengthAwarePaginator|CursorPaginator|Builder {
         // dd($this->model);
         // Get column names of the model's table
         $columns = $this->getTableColumns();
@@ -288,6 +289,9 @@ class BaseService implements IBaseService
         // Pagination configuration
         if ($limit === -1) {
             $results = $query->get();
+        } elseif (! empty($indexes['useCursor'])) {
+            $perPage = $limit;
+            $results = $query->cursorPaginate($perPage);
         } else {
             $perPage = $limit;
             $currentPage = request()->get('page', 1);
