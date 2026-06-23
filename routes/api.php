@@ -98,12 +98,11 @@ Route::prefix('v1')
             });
         Route::name('auth.')
             ->prefix('auth')
-            ->middleware('throttle:auth')
             ->controller(AuthController::class)
             ->group(function () {
-                Route::post('/login', 'login')->name('login')->middleware('guest')->withoutMiddleware(CheckApiToken::class);
+                Route::post('/login', 'login')->name('login')->middleware(['guest', 'throttle:auth:login'])->withoutMiddleware(CheckApiToken::class);
                 Route::post('/logout', 'logout')->name('logout')->middleware('auth:api');
-                Route::post('/register', 'register')->name('register')->middleware('guest');
+                Route::post('/register', 'register')->name('register')->middleware(['guest', 'throttle:auth:register']);
                 Route::get('/me', 'me')->name('me')->middleware('auth:api');
                 Route::get('/api-token', 'generateApiToken')->name('api-token')->middleware('auth:api')->withoutMiddleware(CheckApiToken::class);
             });

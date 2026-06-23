@@ -50,7 +50,9 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         })->render(function (Throwable $e, Request $request) {
             if ($request->wantsJson()) {
-                return (new BaseApiController)->respondInternalError(null, $e->getMessage());
+                $status = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
+
+                return (new BaseApiController)->setStatusCode($status)->setStatusMsg('failed')->respondDetail($e->getMessage(), false);
             }
         });
     })->create();

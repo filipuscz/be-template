@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -9,7 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Columns already exist
+        Schema::table('users', function (Blueprint $table) {
+            $table->softDeletes();
+        });
+        Schema::table('user_details', function (Blueprint $table) {
+            $table->softDeletes();
+        });
     }
 
     /**
@@ -17,6 +24,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Columns already exist
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropSoftDeletes();
+        });
+        Schema::table('user_details', function (Blueprint $table) {
+            $table->dropSoftDeletes();
+        });
     }
 };
