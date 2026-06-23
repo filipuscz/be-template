@@ -26,7 +26,7 @@ class BaseApiController extends Controller
      * @param  int|null  $status  The HTTP status code.
      * @param  array  $headers  Additional headers to be sent with the response.
      */
-    public function respond($data, $status = null, $headers = []): JsonResponse
+    public function respond(mixed $data, mixed $status = null, array $headers = []): JsonResponse
     {
         return Response::json($data, $status ?? $this->statusCode, $headers);
     }
@@ -155,7 +155,7 @@ class BaseApiController extends Controller
      * @param  string|null  $resource  The resource class name for transformation.
      * @return array The paginated response data.
      */
-    public function paginateResponse(LengthAwarePaginator|Collection $paginatedData, $resource = null): array
+    public function paginateResponse(LengthAwarePaginator|Collection $paginatedData, mixed $resource = null): array
     {
         if ($paginatedData instanceof LengthAwarePaginator) {
             if (is_subclass_of($resource, JsonResource::class)) {
@@ -203,6 +203,8 @@ class BaseApiController extends Controller
                 ],
             ];
         }
+
+        return [];
     }
 
     public function formatErrors(array $errors): array

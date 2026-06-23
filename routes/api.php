@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\ExampleController;
+use App\Http\Controllers\Api\v1\LanguageController;
 use App\Http\Controllers\Api\v1\NotificationController;
 use App\Http\Controllers\Api\v1\PermissionController;
 use App\Http\Controllers\Api\v1\RoleController;
@@ -105,5 +106,12 @@ Route::prefix('v1')
                 Route::post('/register', 'register')->name('register')->middleware('guest');
                 Route::get('/me', 'me')->name('me')->middleware('auth:api');
                 Route::get('/api-token', 'generateApiToken')->name('api-token')->middleware('auth:api')->withoutMiddleware(CheckApiToken::class);
+            });
+
+        Route::name('language.')
+            ->prefix('language')
+            ->controller(LanguageController::class)
+            ->group(function () {
+                Route::get('/{locale}', 'show')->name('show');
             });
     });

@@ -35,7 +35,7 @@ interface IBaseService
      * @param  mixed  $id  ID of the record to find.
      * @return Model|null Model instance if found, otherwise null.
      */
-    public function findById($id): ?Model;
+    public function findById(mixed $id): ?Model;
 
     /**
      * Find records by multiple indexes.
@@ -76,14 +76,14 @@ interface IBaseService
      * @param  $idOrSlug  id or slug of instance to delete.
      * @return Model|null updated instance
      */
-    public function update(array $data, $idOrSlug): ?Model;
+    public function update(array $data, mixed $idOrSlug): ?Model;
 
     /**
      * Delete a record.
      *
      * @param  $idOrSlug  id or slug of instance to delete.
      */
-    public function delete($idOrSlug): void;
+    public function delete(mixed $idOrSlug): void;
 
     /**
      * Delete multiple records.

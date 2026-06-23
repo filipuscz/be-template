@@ -160,7 +160,7 @@ class BaseService implements IBaseService
      * @param  mixed  $idOrSlug  The ID or slug of the model to find.
      * @return Model|null The found model instance, or null if not found.
      */
-    public function findById($idOrSlug): ?Model
+    public function findById(mixed $idOrSlug): ?Model
     {
         $query = $this->model->newQuery();
         $data = $query->find($idOrSlug);
@@ -316,7 +316,7 @@ class BaseService implements IBaseService
      *
      * @throws \Exception If unable to update the model.
      */
-    public function update(array $updateData, $idOrSlug): ?Model
+    public function update(array $updateData, mixed $idOrSlug): ?Model
     {
         return DB::transaction(function () use ($updateData, $idOrSlug) {
             $query = $this->model->newQuery();
@@ -352,7 +352,7 @@ class BaseService implements IBaseService
      *
      * @throws \Exception If unable to delete the model.
      */
-    public function delete($idOrSlug): void
+    public function delete(mixed $idOrSlug): void
     {
         DB::transaction(function () use ($idOrSlug) {
             $query = $this->model->newQuery();

@@ -36,7 +36,7 @@ class UserService extends BaseService
         });
     }
 
-    public function update(array $data, $idOrSlug): ?Model
+    public function update(array $data, mixed $idOrSlug): ?Model
     {
         return DB::transaction(function () use ($data, $idOrSlug) {
             if (! empty($data['password'])) {

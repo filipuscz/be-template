@@ -25,7 +25,7 @@ class SettingService extends BaseService
     /**
      * Get a specific setting by key.
      */
-    public function get(string $key, $default = null)
+    public function get(string $key, mixed $default = null): mixed
     {
         $settings = $this->allSettings();
 
@@ -35,7 +35,7 @@ class SettingService extends BaseService
     /**
      * Update or create a setting.
      */
-    public function set(string $key, $value, string $type = 'string'): void
+    public function set(string $key, mixed $value, string $type = 'string'): void
     {
         $this->model->updateOrCreate(
             ['key' => $key],

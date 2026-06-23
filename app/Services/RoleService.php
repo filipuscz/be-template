@@ -24,7 +24,7 @@ class RoleService extends BaseService
         return $role->load('permissions');
     }
 
-    public function update(array $data, $idOrSlug): ?Model
+    public function update(array $data, mixed $idOrSlug): ?Model
     {
         /** @var Role|null $role */
         $role = parent::update($data, $idOrSlug);
