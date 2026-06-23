@@ -71,7 +71,7 @@ class BaseApiController extends Controller
 
     public function generateResponse(int $statusCode, ?array $extras = null, ?string $message = '', bool $success = true): JsonResponse
     {
-        return $this->setStatusCode($statusCode)->respondDetail($message, $success, $extras);
+        return $this->setStatusCode($statusCode)->respondDetail($message ?? '', $success, $extras ?? []);
     }
 
     public function respondOK(?array $extras = null, ?string $message = null, bool $success = true): JsonResponse

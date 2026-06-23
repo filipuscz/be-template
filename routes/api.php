@@ -112,6 +112,6 @@ Route::prefix('v1')
             ->prefix('language')
             ->controller(LanguageController::class)
             ->group(function () {
-                Route::get('/{locale}', 'show')->name('show');
+                Route::get('/{locale}', 'show')->name('show')->withoutMiddleware(CheckApiToken::class);
             });
     });
