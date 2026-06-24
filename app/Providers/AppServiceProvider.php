@@ -2,6 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Passport\AuthCode;
+use App\Models\Passport\Client;
+use App\Models\Passport\DeviceCode;
+use App\Models\Passport\RefreshToken;
+use App\Models\Passport\Token;
 use App\Services\SettingService;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
@@ -25,6 +30,12 @@ class AppServiceProvider extends ServiceProvider
         Passport::tokensExpireIn(now()->addDays(15));
         Passport::refreshTokensExpireIn(now()->addDays(30));
         Passport::personalAccessTokensExpireIn(now()->addMonths(6));
+
+        Passport::useClientModel(Client::class);
+        Passport::useTokenModel(Token::class);
+        Passport::useAuthCodeModel(AuthCode::class);
+        Passport::useRefreshTokenModel(RefreshToken::class);
+        Passport::useDeviceCodeModel(DeviceCode::class);
     }
 
     /**

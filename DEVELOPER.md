@@ -2,7 +2,7 @@
 
 This document outlines how to call all of the endpoints we have implemented during this session, including the required payloads and URLs. 
 
-All endpoints (except login/register) require the `Authorization: Bearer <token>` header.
+All endpoints (except login, register, and public language endpoints) require the `Authorization: Bearer <token>` header AND an `X-API-TOKEN: <api_token>` header (enforced by the `CheckApiToken` middleware).
 Base URL: `http://localhost:8000/api/v1`
 
 ---
@@ -44,6 +44,40 @@ Content-Type: application/json
     "password": "password123",
     "password_confirmation": "password123"
 }
+```
+
+**Login User**
+Returns a Bearer token that you must use for subsequent requests.
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+    "username": "john@example.com", // can be email or username
+    "password": "password123"
+}
+```
+
+**Generate API Token**
+Requires the Bearer token from login. Returns an API Token that must be passed in the `X-API-TOKEN` header for all other endpoints.
+```http
+GET /auth/api-token
+Authorization: Bearer <token>
+```
+
+**Get Current Authenticated User (Me)**
+Requires both Bearer token and X-API-TOKEN.
+```http
+GET /auth/me
+Authorization: Bearer <token>
+X-API-TOKEN: <api_token>
+```
+
+**Logout User**
+```http
+POST /auth/logout
+Authorization: Bearer <token>
+X-API-TOKEN: <api_token>
 ```
 
 ---

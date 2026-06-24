@@ -2,17 +2,168 @@
 
 namespace Tests\Feature;
 
+use App\Helpers\ApiTokenHelper;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class UserControllerTest extends TestCase
 {
-    /**
-     * A basic feature test example.
-     */
-    public function test_example(): void
+    use RefreshDatabase;
+
+    protected string $apiToken;
+
+    protected User $adminUser;
+
+    protected function setUp(): void
     {
-        $response = $this->get('/');
+        parent::setUp();
+
+        Artisan::call('passport:keys', ['--no-interaction' => true]);
+        Artisan::call('passport:client', ['--personal' => true, '--name' => 'Test', '--no-interaction' => true]);
+
+        $this->apiToken = ApiTokenHelper::generate();
+        $this->adminUser = User::factory()->create();
+
+        // Setup permissions
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+        $permissions = ['view users', 'create users', 'update users', 'delete users'];
+        foreach ($permissions as $permission) {
+            Permission::create(['name' => $permission, 'guard_name' => 'api']);
+        }
+        $this->adminUser->givePermissionTo(Permission::whereIn('name', $permissions)->get());
+    }
+
+    public function test_can_list_users()
+    {
+        User::factory()->count(5)->create();
+
+        $response = $this->actingAs($this->adminUser, 'api')
+            ->withHeaders(['X-API-TOKEN' => $this->apiToken])
+            ->getJson('/api/v1/user');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['data', 'meta']);
+    }
+
+    public function test_can_create_user()
+    {
+        $payload = [
+            'name' => 'Test User',
+            'email' => 'testuser@example.com',
+            'username' => 'testuser',
+            'password' => 'secret123',
+        ];
+
+        $response = $this->actingAs($this->adminUser, 'api')
+            ->withHeaders(['X-API-TOKEN' => $this->apiToken])
+            ->postJson('/api/v1/user', $payload);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.email', 'testuser@example.com');
+
+        $this->assertDatabaseHas('me_users', [
+            'email' => 'testuser@example.com',
+            'username' => 'testuser',
+        ]);
+    }
+
+    public function test_can_show_user()
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($this->adminUser, 'api')
+            ->withHeaders(['X-API-TOKEN' => $this->apiToken])
+            ->getJson("/api/v1/user/show/{$user->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.id', $user->id);
+    }
+
+    public function test_can_update_user()
+    {
+        $user = User::factory()->create();
+
+        $payload = [
+            'name' => 'Updated Name',
+            'email' => 'updated@example.com',
+        ];
+
+        $response = $this->actingAs($this->adminUser, 'api')
+            ->withHeaders(['X-API-TOKEN' => $this->apiToken])
+            ->putJson("/api/v1/user/update/{$user->id}", $payload);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.name', 'Updated Name');
+
+        $this->assertDatabaseHas('me_users', [
+            'id' => $user->id,
+            'name' => 'Updated Name',
+        ]);
+    }
+
+    public function test_can_delete_user()
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($this->adminUser, 'api')
+            ->withHeaders(['X-API-TOKEN' => $this->apiToken])
+            ->deleteJson("/api/v1/user/delete/{$user->id}");
 
         $response->assertStatus(200);
+
+        // Since it's soft delete, assert soft deleted or check database directly
+        $this->assertSoftDeleted('me_users', [
+            'id' => $user->id,
+        ]);
+    }
+
+    public function test_can_bulk_update_users()
+    {
+        $users = User::factory()->count(3)->create();
+        $ids = $users->pluck('id')->toArray();
+
+        $payload = [
+            'ids' => $ids,
+            'name' => 'Bulk Updated Name',
+        ];
+
+        $response = $this->actingAs($this->adminUser, 'api')
+            ->withHeaders(['X-API-TOKEN' => $this->apiToken])
+            ->putJson('/api/v1/user/bulk_action/update', $payload);
+
+        $response->assertStatus(200);
+
+        foreach ($ids as $id) {
+            $this->assertDatabaseHas('me_users', [
+                'id' => $id,
+                'name' => 'Bulk Updated Name',
+            ]);
+        }
+    }
+
+    public function test_can_bulk_delete_users()
+    {
+        $users = User::factory()->count(3)->create();
+        $ids = $users->pluck('id')->toArray();
+
+        $payload = [
+            'ids' => $ids,
+        ];
+
+        $response = $this->actingAs($this->adminUser, 'api')
+            ->withHeaders(['X-API-TOKEN' => $this->apiToken])
+            ->deleteJson('/api/v1/user/bulk_action/destroy', $payload);
+
+        $response->assertStatus(200);
+
+        foreach ($ids as $id) {
+            $this->assertSoftDeleted('me_users', [
+                'id' => $id,
+            ]);
+        }
     }
 }

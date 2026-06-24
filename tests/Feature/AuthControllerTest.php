@@ -39,7 +39,7 @@ class AuthControllerTest extends TestCase
         $response->assertStatus(200) // RegisterController responds with OK typically, let's check
             ->assertJsonStructure(['data', 'token']);
 
-        $this->assertDatabaseHas('users', [
+        $this->assertDatabaseHas('me_users', [
             'email' => 'john@example.com',
         ]);
     }

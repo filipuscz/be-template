@@ -20,6 +20,8 @@ class User extends Authenticatable implements OAuthenticatable
      */
     use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
+    protected $table = 'me_users';
+
     protected $guarded = ['id'];
 
     /**
@@ -63,5 +65,13 @@ class User extends Authenticatable implements OAuthenticatable
     public function detail(): HasOne
     {
         return $this->hasOne(UserDetail::class);
+    }
+
+    /**
+     * Get the entity's notifications.
+     */
+    public function notifications()
+    {
+        return $this->morphMany(Notification::class, 'notifiable')->latest();
     }
 }

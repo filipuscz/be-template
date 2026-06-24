@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('oauth_refresh_tokens', function (Blueprint $table) {
+        Schema::create('mg_oauth_refresh_tokens', function (Blueprint $table) {
             $table->char('id', 80)->primary();
             $table->char('access_token_id', 80)->index();
             $table->boolean('revoked');
@@ -24,7 +24,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('oauth_refresh_tokens');
+        Schema::dropIfExists('mg_oauth_refresh_tokens');
     }
 
     /**

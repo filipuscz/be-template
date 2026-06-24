@@ -6,17 +6,12 @@ use App\Models\Post;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreExampleRequest extends FormRequest
 {
-    protected $userModel;
-
-    protected $postModel;
-
     public function __construct()
     {
-        $this->userModel = new User;
-        $this->postModel = new Post;
     }
 
     /**
@@ -34,16 +29,13 @@ class StoreExampleRequest extends FormRequest
      */
     public function rules(): array
     {
-        $userTable = $this->userModel->getTable();
-        $postTable = $this->postModel->getTable();
-
         return [
             'title' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
-            'user_id' => ['required', 'exists:'.$userTable.',id'],
+            'user_id' => ['required', Rule::exists(User::class, 'id')],
             'is_published' => ['sometimes', 'boolean'],
             'published_at' => ['sometimes', 'date'],
-            'slug' => ['sometimes', 'string', 'max:255', 'unique:'.$postTable.',slug'],
+            'slug' => ['sometimes', 'string', 'max:255', Rule::unique(Post::class, 'slug')],
             'views' => ['sometimes', 'integer', 'min:0'],
             'featured_image' => ['sometimes', 'string', 'max:255'],
             'excerpt' => ['sometimes', 'string'],

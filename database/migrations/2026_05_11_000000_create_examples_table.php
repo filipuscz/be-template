@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('examples', function (Blueprint $table) {
+        Schema::create('tb_examples', function (Blueprint $table) {
             // Identifiers
             $table->id();
             $table->uuid('uuid')->unique();
@@ -68,7 +68,7 @@ return new class extends Migration
             $table->geometry('polygon_column', 'polygon')->nullable();
 
             // Foreign Keys
-            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained('me_users')->onDelete('cascade');
 
             // Special
             $table->rememberToken();
@@ -82,6 +82,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('examples');
+        Schema::dropIfExists('tb_examples');
     }
 };

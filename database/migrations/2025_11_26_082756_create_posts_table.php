@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('posts', function (Blueprint $table) {
+        Schema::create('tb_posts', function (Blueprint $table) {
             $table->id();
             $table->string('title');
             $table->text('content');
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('me_users')->onDelete('cascade');
             $table->boolean('is_published')->default(false);
             $table->timestamp('published_at')->nullable();
             $table->string('slug')->unique();
@@ -33,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('posts');
+        Schema::dropIfExists('tb_posts');
     }
 };

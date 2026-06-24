@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests\User;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Role;
 
 class StoreUpdateRequest extends FormRequest
 {
@@ -22,11 +25,17 @@ class StoreUpdateRequest extends FormRequest
 
         $rules = [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email'.($userId ? ','.$userId : ''),
-            'username' => 'nullable|string|max:255|unique:users,username'.($userId ? ','.$userId : ''),
+            'email' => [
+                'required', 'string', 'email', 'max:255',
+                Rule::unique(User::class, 'email')->ignore($userId),
+            ],
+            'username' => [
+                'nullable', 'string', 'max:255',
+                Rule::unique(User::class, 'username')->ignore($userId),
+            ],
             'is_active' => 'sometimes|boolean',
             'roles' => 'nullable|array',
-            'roles.*' => 'exists:roles,name', // Accepts role names
+            'roles.*' => Rule::exists(Role::class, 'name'), // Accepts role names
 
             // Nested UserDetail Rules
             'details' => 'nullable|array',

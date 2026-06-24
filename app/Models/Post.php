@@ -11,6 +11,8 @@ class Post extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'tb_posts';
+
     protected $fillable = [
         'title',
         'content',

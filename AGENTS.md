@@ -1,75 +1,80 @@
 # AGENTS.md
 
-## Project Context
+This document serves as the master guidelines file for AI Agents operating in this repository. It combines project-specific context, security rules, and Laravel Boost best practices.
+
+## 1. Project Context & Architecture
 
 - This repository is a Laravel backend API template.
-- The installed dependency set in `composer.lock` currently includes Laravel `v13.16.1`, Laravel Passport `v13.7.5`, Laravel Boost `v2.4.10`, Laravel Pint `v1.29.3`, and PHPUnit `v11.5.55`.
-- Treat `composer.json` and `composer.lock` as the source of truth for versions. Re-check them before giving version-specific guidance because `GEMINI.md` may be stale.
+- The installed dependency set in `composer.lock` currently includes Laravel `v13.x` (or `v12.x`), Laravel Passport `v13.x`, Laravel Boost, Laravel Pint, and PHPUnit `v11.x`. (Treat `composer.json` as the source of truth).
 - API routes live under `routes/api.php`, with the main pattern using `/api/v1/...`, `CheckApiToken`, and `auth:api` where required.
-
-## Local Conventions
-
-- Follow sibling files before adding or changing structure.
+- Stick to existing directory structure - don't create new top-level folders or change architecture patterns without approval.
 - Keep controllers thin. Existing API controllers extend `App\Http\Controllers\BaseApiController` and delegate business logic to services.
 - Put reusable data operations in services. Existing services extend `App\Services\BaseService`.
-- Use Form Request classes for validation rather than inline controller validation.
 - Use API resources for response data where the existing endpoint pattern does so.
-- Prefer Eloquent models, relationships, eager loading, and query builders over raw SQL.
-- Use named routes and Laravel helpers where practical.
-- Do not add new top-level directories, dependencies, or architecture patterns without user approval.
 
-## Code Style
+## 2. Database & Eloquent Conventions (CRITICAL)
 
-- Use explicit PHP return types and parameter types when adding or changing methods.
-- Use constructor property promotion for dependencies when it matches the existing style.
-- Always use braces for control structures.
-- Prefer useful PHPDoc for array shapes or non-obvious types.
-- Keep comments sparse; add them only for complex logic that benefits from explanation.
+- **Mandatory Table Prefixes**: Every table name MUST begin with the approved system prefix (`me_` for Master Entity, `tb_` for Transaction Base, `st_` for Setup/Static, `mg_` for Management).
+- **Format**: All table names must be written in lowercase `snake_case`.
+- **Eloquent Binding**: When creating or modifying Eloquent Models, you MUST explicitly define the `$table` property with the prefixed table name.
+- **Validation Rules (FormRequests)**: NEVER hardcode string table names (e.g., `unique:me_users,email`). ALWAYS use the Eloquent Model class natively via `Rule::unique(User::class, 'email')` or `Rule::exists(Role::class, 'id')`.
+- Always use proper Eloquent relationship methods with return type hints. Avoid `DB::` facade when `Model::query()` can be used. Prevent N+1 query problems by using eager loading.
+- When modifying a column, the migration must include all attributes previously defined on the column. Otherwise, they will be dropped.
+- Casts should be set in a `casts()` method on a model rather than the `$casts` property.
+
+## 3. Security & Authentication
+
+- **User Enumeration**: Do NOT implement custom validation rules (like `UserExists`) that explicitly reveal whether a user exists during authentication. Rely on `Auth::attempt` to fail cleanly and return a generic `auth.failed` message.
+- Use Form Request classes for validation rather than inline validation in controllers. Include validation rules and custom error messages if needed.
+- Use Laravel's built-in authentication and authorization features (gates, policies, Sanctum/Passport, etc.).
+- Use queued jobs for time-consuming operations with the `ShouldQueue` interface.
+
+## 4. Code Style & PHP Rules
+
+- Always use curly braces for control structures, even for single lines.
+- Use explicit PHP return types and parameter types for all methods and functions.
+- Use PHP 8 constructor property promotion in `__construct()`. Do not allow empty `__construct()` methods with zero parameters.
+- Prefer PHPDoc blocks with useful array shape type definitions over inline code comments. Keep comments sparse; add them only for very complex logic.
+- Enums should use TitleCase keys (e.g., `FavoritePerson`).
 - Use ASCII unless an edited file already uses another character set for a clear reason.
 
-## Commands
+## 5. Testing And Verification
+
+- This application uses **PHPUnit** exclusively. Convert any Pest tests to PHPUnit. Use `php artisan make:test --phpunit {name}`.
+- Run the minimal relevant test set using `php artisan test --filter=testName` before finalizing. To run all tests: `php artisan test`.
+- **Spatie Permissions in Tests**: Guarded permissions (e.g., `guard_name => 'api'`) require explicit lookup via `Permission::whereIn('name', [...])->get()` when assigning to models in tests to avoid `PermissionDoesNotExist` exceptions.
+- Tests should cover all happy paths, failure paths, and edge cases. When creating models for tests, use factories and check for custom states.
+- Do not remove tests or test files without explicit approval.
+- Format changed PHP files before finalizing edits using `vendor/bin/pint --dirty`. Do not run with `--test`.
+
+## 6. Commands
 
 - Install PHP dependencies: `composer install`
 - Install frontend dependencies: `npm install`
 - Run the app/dev stack: `composer run dev`
-- Run all tests: `php artisan test`
-- Run one test file: `php artisan test tests/Feature/ExampleTest.php`
-- Run a filtered test: `php artisan test --filter=testName`
-- Format changed PHP files before finalizing PHP edits: `vendor/bin/pint --dirty`
 - Build frontend assets when needed: `npm run build`
+- Pass `--no-interaction` to all Artisan commands to ensure they work without user input.
 
-## Laravel Boost
+## 7. Laravel Boost & Ecosystem
 
-- This project includes Laravel Boost. When Boost MCP tools are available, use them for Laravel-specific work.
-- Before changing Laravel ecosystem code that depends on framework behavior, use Boost `search-docs` for version-specific documentation.
-- Use Boost database or tinker tools when available for targeted debugging instead of creating temporary scripts.
+- This project includes **Laravel Boost**. Use Boost MCP tools for Laravel-specific work.
+- **`search-docs`** (Critically Important): Use this tool to get version-specific documentation before falling back to other approaches. Search docs before making code changes to ensure the correct approach.
+- **`list-artisan-commands`**: Use this to double-check available parameters for Artisan commands.
+- **`tinker` & `database-query`**: Use these tools for targeted debugging or querying instead of creating temporary scripts.
+- **`browser-logs`**: Read frontend logs, errors, and exceptions. Ignore old logs.
+- **`get-absolute-url`**: Use this tool to ensure you're using the correct scheme, domain, and port when sharing a project URL.
 
-## Testing And Verification
-
-- Run the smallest relevant test set for the change.
-- If PHP files are changed, run `vendor/bin/pint --dirty` before final response.
-- If tests cannot be run because of environment or dependency issues, report the exact blocker.
-- Do not remove tests or test files without explicit approval.
-
-## Codex Skills
+## 8. Codex Skills
 
 ### skill-creator
-
-- Use `/home/filip/.codex/skills/.system/skill-creator/SKILL.md` when creating or updating Codex skills.
-- Read the full `SKILL.md` before acting.
-- Keep skill instructions concise and focused on non-obvious procedural knowledge.
-- For new skills, use the skill initializer script unless the user is asking only for planning or documentation.
-- Validate completed skill folders with the skill validation script.
+- Use `/home/filip/.codex/skills/.system/skill-creator/SKILL.md` when creating or updating Codex skills. Read the full `SKILL.md` before acting.
+- Keep skill instructions concise and focused on non-obvious procedural knowledge. Validate completed skill folders with the skill validation script.
 
 ### skill-installer
-
 - Use `/home/filip/.codex/skills/.system/skill-installer/SKILL.md` when the user asks to list, install, or update Codex skills from curated sources or GitHub.
-- Read the full `SKILL.md` before acting.
-- The installer scripts require network access, so request escalation when running them in a restricted sandbox.
-- After installing skills, tell the user to restart Codex to pick up new skills.
-- The `.system` skills are already preinstalled; do not reinstall them unless the user explicitly insists.
+- The installer scripts require network access, so request escalation when running them in a restricted sandbox. After installing, tell the user to restart Codex.
 
-## Git And Workspace Safety
+## 9. Git And Workspace Safety
 
 - The working tree may contain user edits. Inspect `git status --short` before editing.
 - Do not revert or overwrite changes you did not make.

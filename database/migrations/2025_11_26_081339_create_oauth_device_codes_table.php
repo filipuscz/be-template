@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('oauth_device_codes', function (Blueprint $table) {
+        Schema::create('mg_oauth_device_codes', function (Blueprint $table) {
             $table->char('id', 80)->primary();
             $table->foreignId('user_id')->nullable()->index();
             $table->foreignUuid('client_id')->index();
@@ -29,7 +29,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('oauth_device_codes');
+        Schema::dropIfExists('mg_oauth_device_codes');
     }
 
     /**

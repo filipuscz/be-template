@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Example;
 
+use App\Models\Example;
+use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -31,8 +33,8 @@ class StoreUpdateRequest extends FormRequest
         $exampleId = $this->route('example');
 
         return [
-            'uuid' => ['required', 'uuid', Rule::unique('examples', 'uuid')->ignore($exampleId)],
-            'ulid' => ['required', 'ulid', Rule::unique('examples', 'ulid')->ignore($exampleId)],
+            'uuid' => ['required', 'uuid', Rule::unique(Example::class, 'uuid')->ignore($exampleId)],
+            'ulid' => ['required', 'ulid', Rule::unique(Example::class, 'ulid')->ignore($exampleId)],
 
             'string_column' => ['required', 'string', 'max:255'],
             'string_with_length' => ['required', 'string', 'max:100'],
@@ -77,7 +79,7 @@ class StoreUpdateRequest extends FormRequest
             'linestring_column' => ['nullable', 'string'],
             'polygon_column' => ['nullable', 'string'],
 
-            'user_id' => ['nullable', 'exists:users,id'],
+            'user_id' => ['nullable', Rule::exists(User::class, 'id')],
         ];
     }
 }

@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('me_users', function (Blueprint $table) {
             $table->softDeletes();
         });
-        Schema::table('user_details', function (Blueprint $table) {
+        Schema::table('me_user_details', function (Blueprint $table) {
             $table->softDeletes();
         });
     }
@@ -24,10 +24,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('me_users', function (Blueprint $table) {
             $table->dropSoftDeletes();
         });
-        Schema::table('user_details', function (Blueprint $table) {
+        Schema::table('me_user_details', function (Blueprint $table) {
             $table->dropSoftDeletes();
         });
     }

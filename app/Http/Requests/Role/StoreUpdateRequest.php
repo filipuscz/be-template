@@ -3,6 +3,9 @@
 namespace App\Http\Requests\Role;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class StoreUpdateRequest extends FormRequest
 {
@@ -14,16 +17,16 @@ class StoreUpdateRequest extends FormRequest
     public function rules(): array
     {
         $id = $this->route('idOrSlug');
-        $rule = 'required|string|max:255|unique:roles,name';
-
-        if ($id) {
-            $rule .= ','.$id;
-        }
 
         return [
-            'name' => $rule,
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique(Role::class, 'name')->ignore($id),
+            ],
             'permissions' => 'nullable|array',
-            'permissions.*' => 'exists:permissions,id',
+            'permissions.*' => Rule::exists(Permission::class, 'id'),
         ];
     }
 }

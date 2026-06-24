@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('oauth_clients', function (Blueprint $table) {
+        Schema::create('mg_oauth_clients', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
             $table->string('name');
@@ -29,7 +29,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('oauth_clients');
+        Schema::dropIfExists('mg_oauth_clients');
     }
 
     /**
