@@ -38,14 +38,18 @@ This document serves as the master guidelines file for AI Agents operating in th
 - Enums should use TitleCase keys (e.g., `FavoritePerson`).
 - Use ASCII unless an edited file already uses another character set for a clear reason.
 
-## 5. Testing And Verification
+## 5. Testing And Verification (CRITICAL PROMPT WORKFLOW)
 
+- **Mandatory Verification**: Before concluding *every* prompt or task, you MUST run the following three commands to guarantee codebase stability:
+  1. `vendor/bin/pint --test`
+  2. `vendor/bin/phpstan analyse --error-format=github`
+  3. `php artisan test`
 - This application uses **PHPUnit** exclusively. Convert any Pest tests to PHPUnit. Use `php artisan make:test --phpunit {name}`.
-- Run the minimal relevant test set using `php artisan test --filter=testName` before finalizing. To run all tests: `php artisan test`.
+- Run the minimal relevant test set using `php artisan test --filter=testName` during development, but always run the full suite at the end.
 - **Spatie Permissions in Tests**: Guarded permissions (e.g., `guard_name => 'api'`) require explicit lookup via `Permission::whereIn('name', [...])->get()` when assigning to models in tests to avoid `PermissionDoesNotExist` exceptions.
 - Tests should cover all happy paths, failure paths, and edge cases. When creating models for tests, use factories and check for custom states.
 - Do not remove tests or test files without explicit approval.
-- Format changed PHP files before finalizing edits using `vendor/bin/pint --dirty`. Do not run with `--test`.
+- Format changed PHP files before finalizing edits using `vendor/bin/pint --dirty`.
 
 ## 6. Commands
 

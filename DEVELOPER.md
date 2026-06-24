@@ -240,3 +240,27 @@ Expose the backend Laravel localization files (e.g. `messages.php`, `validation.
 GET /language/{locale}
 ```
 *Note: This endpoint is accessible without an authentication token so the frontend can load translations before login.*
+
+---
+
+## 7. Quality Assurance & CI Checks
+
+To ensure the backend API remains stable, performant, and clean, all developers (and AI agents) must run the following sequence of checks before finalizing any feature or prompt:
+
+**1. Code Formatting (Pint)**
+Ensure the code perfectly follows Laravel's opinionated formatting.
+```bash
+vendor/bin/pint --test
+```
+
+**2. Static Analysis (PHPStan / Larastan)**
+Catch type errors, undefined variables, and logic bugs without executing the code.
+```bash
+vendor/bin/phpstan analyse --error-format=github
+```
+
+**3. Feature & Unit Testing (PHPUnit)**
+Ensure no business logic or API endpoints are broken.
+```bash
+php artisan test
+```
